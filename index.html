@@ -276,7 +276,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 <footer>
   <div class="container">
     <span>© 2026 Matty Jatta · A personal documentary</span>
-    <span style="display:flex; gap:20px"><a href="https://www.instagram.com/maty_jat/">Instagram</a><a href="https://www.linkedin.com/in/matty-jatta-b11880199/">LinkedIn</a></span>
+    <span style="display:flex; gap:20px"><a href="https://www.linkedin.com/in/matty-jatta-b11880199/">LinkedIn</a></span>
   </div>
 </footer>
 
@@ -297,7 +297,7 @@ const FILM = {
   arrived: "2026-08-03",
   goal: 100, // the mission: 100 cities
   hero: "media/hero-palms.jpg",
-  instagram: "https://www.instagram.com/maty_jat/",
+  linkedin: "https://www.linkedin.com/in/matty-jatta-b11880199/",
   about: {
     photo: "media/st-augustine-blue-hour-reflection.jpg",
     text: "I'm Matty, from Gothenburg, Sweden. This year I live in St. Augustine, Florida, where I work as a software and automation engineer, building software for self-driving vehicles. Off the clock I run, read, chase sunsets and collect cities. This site is my documentary of the year: every place I visit becomes a chapter.",
@@ -886,7 +886,7 @@ function renderHome() {
         ${FILM.about.trailer
           ? `<video src="${esc(FILM.about.trailer)}" controls playsinline style="width:100%; border-radius:18px"></video>`
           : `<div class="trailer-ph"><span class="pl">▶</span><span><b style="color:var(--fg)">Trailer coming soon</b><br>A short video introduction is in the edit.</span></div>`}
-        <a class="btn outline" style="justify-self:start" href="${esc(FILM.instagram)}">Follow the journey on Instagram</a>
+        <a class="btn outline" style="justify-self:start" href="${esc(FILM.linkedin)}">Connect on LinkedIn</a>
       </div>
     </div></section>
     <section class="section alt" id="next"><div class="container">
@@ -912,13 +912,13 @@ function renderHome() {
           <h3>Suggest my next city</h3>
           <p class="lead" style="font-size:1rem">These are already on my list. Know a place I shouldn't miss?</p>
           <div class="chips">${FILM.nextEpisodes.map((n) => `<span>${esc(n.label || n.city)}</span>`).join("")}</div>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.instagram)}">Send me a city</a>
+          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">Send me a city</a>
           <span class="soon">Live voting coming soon.</span>
         </div>
         <div class="turn-card">
           <h3>Recommend me a book</h3>
           <p class="lead" style="font-size:1rem">Right now: ${esc(FILM.nowReading ? FILM.nowReading.title : "nothing")}. What should be next on the shelf?</p>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.instagram)}">Send a book tip</a>
+          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">Send a book tip</a>
           <span class="soon">Readers' shelf coming soon.</span>
         </div>
       </div>
