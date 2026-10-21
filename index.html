@@ -173,6 +173,9 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .share-btn:hover { color: var(--accent); }
 .tally { margin: 14px 0 0; text-align: center; font-size: .95rem; opacity: .85; }
 .tally b { color: var(--accent); font-weight: 700; }
+.lang { display: inline-flex; gap: 2px; margin-left: 10px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; }
+.lang button { background: none; border: 0; color: var(--muted); font: inherit; font-size: .72rem; font-weight: 700; letter-spacing: .08em; padding: 4px 8px; border-radius: 999px; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .pager .all { padding: 12px 20px; border-radius: 999px; font-family: var(--f-head); font-weight: 600; font-size: .85rem; }
 
 /* BEST OF / SEE ALL */
@@ -275,7 +278,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 <header class="nav">
   <div class="container">
     <a class="logo" href="#home">My American Year<span>.</span></a>
-    <nav aria-label="Main"><a href="#episodes" data-nav="home">Chapters</a><a href="#map" data-nav="home">Map</a><a href="#about" data-nav="home">About</a><a href="#reading" data-nav="home">Reading</a></nav>
+    <nav aria-label="Main"><a href="#episodes" data-nav="home" data-t="nav_chapters">Chapters</a><a href="#map" data-nav="home" data-t="nav_map">Map</a><a href="#about" data-nav="home" data-t="nav_about">About</a><a href="#reading" data-nav="home" data-t="nav_reading">Reading</a><span class="lang" role="group" aria-label="Language" id="langSwitch"><button type="button" data-lang="en" lang="en">EN</button><button type="button" data-lang="sv" lang="sv">SV</button><button type="button" data-lang="fr" lang="fr">FR</button></span></nav>
   </div>
 </header>
 
@@ -283,20 +286,22 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 
 <footer>
   <div class="container">
-    <span>© 2026 Matty Jatta · A personal documentary</span>
+    <span>© 2026 Matty Jatta · <span data-t="footer">A personal documentary</span></span>
     <span style="display:flex; gap:20px"><a href="https://www.linkedin.com/in/matty-jatta-b11880199/">LinkedIn</a></span>
   </div>
 </footer>
 
-<dialog class="lightbox" id="lightbox" aria-label="Photo viewer">
-  <button type="button" class="lb-btn" id="lbClose" aria-label="Close">×</button>
-  <button type="button" class="lb-btn" id="lbPrev" aria-label="Previous photo">‹</button>
-  <button type="button" class="lb-btn" id="lbNext" aria-label="Next photo">›</button>
+<dialog class="lightbox" id="lightbox" aria-label="Photo viewer" data-ta="lb_viewer">
+  <button type="button" class="lb-btn" id="lbClose" aria-label="Close" data-ta="lb_close">×</button>
+  <button type="button" class="lb-btn" id="lbPrev" aria-label="Previous photo" data-ta="lb_prev">‹</button>
+  <button type="button" class="lb-btn" id="lbNext" aria-label="Next photo" data-ta="lb_next">›</button>
   <img id="lbImg" alt="">
   <video id="lbVid" muted loop playsinline controls hidden></video>
   <p id="lbCap"></p>
 </dialog>
 
+<script src="i18n.js"></script>
+<script src="i18n-caps.js"></script>
 <script>
 /* ================= THE DOCUMENTARY (edit here) =================
    chapters: in story order. Add photos as { src, cap, size: "big" | "wide" | "" }.
@@ -788,6 +793,36 @@ const FILM = {
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const app = $("app");
+
+// Language: ?lang=xx, then the visitor's saved choice, then the browser language, then English.
+let lang = (() => {
+  try { const q = new URLSearchParams(location.search).get("lang"); if (q && LANGS[q]) return q;
+        const s = localStorage.getItem("lang"); if (s && LANGS[s]) return s; } catch (e) {}
+  const b = (navigator.language || "en").slice(0, 2); return LANGS[b] ? b : "en";
+})();
+const t = (k, v = {}) => String(UI[lang][k] ?? UI.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
+const w = (s) => (lang !== "en" && WORDS[lang] && WORDS[lang][s]) || s;
+const capT = (s) => (lang !== "en" && CAPS[lang] && CAPS[lang][s]) || s;
+// A chapter in the current language (English stays the source; missing translations fall back to it).
+function L(c) {
+  if (lang === "en") return c;
+  const x = (CONTENT[lang].chapters || {})[c.id] || {};
+  return { ...c, when: x.when || c.when, sub: x.sub || c.sub, narration: x.narration || c.narration, place: x.place || c.place,
+    no: c.no.replace(/^(Prologue|Chapter)/, (m) => w(m)), region: w(c.region), country: w(c.country),
+    tips: x.tips && x.tips.length ? x.tips : c.tips,
+    alsoIn: (c.alsoIn || []).map((a, i) => ({ ...a, kind: w(a.kind), note: (x.also || [])[i] || a.note })),
+    photos: c.photos.map((p) => ({ ...p, cap: capT(p.cap) })) };
+}
+const about = () => lang === "en" ? FILM.about : { ...FILM.about, ...CONTENT[lang].about };
+const nextEp = (n) => { const x = lang === "en" ? {} : (CONTENT[lang].next || {})[n.city] || {}; return { ...n, kind: w(n.kind), ...x }; };
+const readingWhere = () => (lang !== "en" && CONTENT[lang].reading && CONTENT[lang].reading.where) || (FILM.nowReading && FILM.nowReading.where);
+function applyStatic() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => (e.textContent = t(e.dataset.t)));
+  document.querySelectorAll("[data-ta]").forEach((e) => e.setAttribute("aria-label", t(e.dataset.ta)));
+  $("langSwitch").setAttribute("aria-label", t("lang_label"));
+  document.querySelectorAll("#langSwitch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+}
 const visitedUS = FILM.chapters.filter((c) => c.country === "USA");
 // The mission counts US cities, towns and villages (places with their own local government), each once.
 const cityCount = visitedUS.reduce((n, c) => n + 1 + (c.alsoIn || []).filter((a) => a.counts).length, 0);
@@ -809,16 +844,16 @@ function mapSvg() {
       <circle class="m-pulse" cx="${xy[c.id][0]}" cy="${xy[c.id][1]}" r="${r}"/><circle class="m-pin" cx="${xy[c.id][0]}" cy="${xy[c.id][1]}" r="${r}"/></a>`;
   const nextPins = (r, fs) => FILM.nextEpisodes.filter((n) => xy[n.city]).map((n) => {
     const [x, y] = xy[n.city];
-    return `<circle class="m-next" cx="${x}" cy="${y}" r="${r}"><title>${esc(n.city)} (next)</title></circle>` +
+    return `<circle class="m-next" cx="${x}" cy="${y}" r="${r}"><title>${esc(n.city)} ${t("next_tag")}</title></circle>` +
       `<text class="m-label dim" x="${x + r + 4}" y="${y + 4}" style="font-size:${fs}px">${esc(n.city)}</text>`;
   }).join("");
-  const main = `<svg viewBox="0 0 975 610" role="img" aria-label="Map of the United States with the cities I have visited">
+  const main = `<svg viewBox="0 0 975 610" role="img" aria-label="${t("map_aria")}">
     <path class="m-land" d="${M.nation}"/><path class="m-fl" d="${M.fl}"/><path class="m-borders" d="${M.borders}"/>
     <path class="m-route" d="${fromLondon}"/>
-    <text class="m-label" x="968" y="108" text-anchor="end">✈ from London</text>
+    <text class="m-label" x="968" y="108" text-anchor="end">${t("from_london")}</text>
     ${nextPins(6, 13)}
     ${visited.map((c) => pin(c, 5)).join("")}
-    <text class="m-label" x="${xy["st-augustine"][0] - 14}" y="${xy["st-augustine"][1] - 14}" text-anchor="end">Florida · ${cityCount} cities</text>
+    <text class="m-label" x="${xy["st-augustine"][0] - 14}" y="${xy["st-augustine"][1] - 14}" text-anchor="end">${t("fl_cities", { n: cityCount })}</text>
   </svg>`;
   const flLabel = { "st-augustine": [4, 1.5, "start"], jacksonville: [-4, 1.5, "end"], orlando: [4, 2, "start"], tampa: [-4, -1, "end"], "st-petersburg": [-4, 5, "end"] };
   const inset = `<svg viewBox="724 458 114 126" aria-hidden="true">
@@ -831,11 +866,12 @@ function mapSvg() {
   return { main, inset };
 }
 
-function poster(c, feature) {
+function poster(c0, feature) {
+  const c = L(c0);
   const ready = c.photos.length > 0;
   return `<a class="ep${feature ? " feature" : ""}${ready ? "" : " poster-fill"}" href="#chapter-${c.id}">
     ${ready ? `<img src="${esc(thumb(c.cover || c.photos[0].src))}" alt="${esc(c.city)}, ${esc(c.region)}" loading="lazy">` : `<span class="city-mark" aria-hidden="true">${esc(c.city)}</span>`}
-    <span class="badge${ready ? " live" : ""}">${ready ? `${c.photos.length} scenes${c.photos.some((p) => p.video) ? " · ▶ video" : ""}` : "In the edit"}</span>
+    <span class="badge${ready ? " live" : ""}">${ready ? `${t("scenes_n", { n: c.photos.length })}${c.photos.some((p) => p.video) ? " · " + t("video") : ""}` : t("in_edit")}</span>
     <span class="play" aria-hidden="true">▶</span>
     <span class="info"><span class="no">${esc(c.no)}</span><h3>${esc(c.city)}</h3><span class="meta">${esc(c.when)} · ${esc(c.sub)}</span></span>
   </a>`;
@@ -843,96 +879,97 @@ function poster(c, feature) {
 
 function renderHome() {
   document.title = "My American Year";
+  const A = about();
   const [first, ...rest] = FILM.chapters;
   app.innerHTML = `<div class="view">
     <section class="hero">
-      <img src="${FILM.hero}" alt="Palm trees in front of the old fort walls in St. Augustine, Florida">
+      <img src="${FILM.hero}" alt="${t("hero_alt")}">
       <div class="container">
-        <p class="credit">A personal documentary by Matty Jatta</p>
+        <p class="credit">${t("credit")}</p>
         <h1>My American Year</h1>
-        <p class="tagline">The mission: ${FILM.goal} cities · 2026–2027</p>
+        <p class="tagline">${t("tagline", { n: FILM.goal })}</p>
         <span class="bar" aria-hidden="true"></span>
-        <div class="actions"><a class="btn" href="#episodes">▶ Start watching</a><span class="btn ghost" aria-disabled="true">Trailer coming soon</span></div>
+        <div class="actions"><a class="btn" href="#episodes">${t("start")}</a><span class="btn ghost" aria-disabled="true">${t("trailer_soon")}</span></div>
       </div>
     </section>
-    <section class="band" aria-label="The year in numbers"><div class="container">
-      <div class="stat"><b class="num">${days}</b><span>days in America</span></div>
-      <div class="stat"><b class="num">${cityCount}</b><span>cities visited</span></div>
-      <div class="stat"><b class="num">${stateCount}</b><span>${stateCount === 1 ? "state" : "states"} so far</span></div>
-      <div class="stat"><b class="num">${FILM.goal - cityCount}</b><span>cities to go</span></div>
+    <section class="band" aria-label="${t("band_label")}"><div class="container">
+      <div class="stat"><b class="num">${days}</b><span>${t("days")}</span></div>
+      <div class="stat"><b class="num">${cityCount}</b><span>${t("cities_visited")}</span></div>
+      <div class="stat"><b class="num">${stateCount}</b><span>${t(stateCount === 1 ? "state_so_far" : "states_so_far")}</span></div>
+      <div class="stat"><b class="num">${FILM.goal - cityCount}</b><span>${t("cities_to_go")}</span></div>
     </div>
     <div class="container mission">
-      <div class="mission-top"><span>Mission ${FILM.goal} cities</span><span class="num">${cityCount} / ${FILM.goal}</span></div>
-      <div class="mission-track" role="progressbar" aria-label="Cities visited out of ${FILM.goal}" aria-valuenow="${cityCount}" aria-valuemax="${FILM.goal}">
+      <div class="mission-top"><span>${t("mission", { n: FILM.goal })}</span><span class="num">${cityCount} / ${FILM.goal}</span></div>
+      <div class="mission-track" role="progressbar" aria-label="${t("mission_aria", { n: FILM.goal })}" aria-valuenow="${cityCount}" aria-valuemax="${FILM.goal}">
         ${Array.from({ length: FILM.goal }, (_, k) => `<i class="${k < cityCount ? "on" : ""}"></i>`).join("")}
       </div>
       <p class="tally">${(() => {
         const ph = FILM.chapters.flatMap((c) => c.photos);
         const vids = ph.filter((p) => p.video).length;
-        return `<b>${ph.length}</b> scenes · <b>${vids}</b> video clips · <b>${FILM.chapters.length}</b> chapters · <b>${FILM.books.length}</b> ${FILM.books.length === 1 ? "book" : "books"} on the shelf`;
+        return t("tally", { s: ph.length, v: vids, c: FILM.chapters.length, b: FILM.books.length, books: t(FILM.books.length === 1 ? "book" : "books") });
       })()}</p>
-      <p class="count-rule">What counts: every US city, town or village I visit counts once. Neighbourhoods, parks and highway stops don't, and states are counted separately.</p>
+      <p class="count-rule">${t("count_rule")}</p>
     </div></section>
     <section class="section" id="episodes"><div class="container">
-      <div class="head"><span class="eyebrow">Episode guide</span><h2>The chapters</h2>
-        <p class="lead">Every place becomes a chapter: the footage, and my own narration of what it felt like to be there.</p></div>
+      <div class="head"><span class="eyebrow">${t("ep_eyebrow")}</span><h2>${t("ep_h")}</h2>
+        <p class="lead">${t("ep_lead")}</p></div>
       <div class="episodes">${poster(FILM.chapters[1], true)}${[FILM.chapters[0], ...FILM.chapters.slice(2)].map((c) => poster(c)).join("")}</div>
     </div></section>
     <section class="section alt" id="map"><div class="container">
-      <div class="head"><span class="eyebrow">The route</span><h2>Where I've been</h2>
-        <p class="lead">A layover in London, landing in Orlando, then a year based in St. Augustine. Every pin is a chapter; tap one to open it.</p></div>
+      <div class="head"><span class="eyebrow">${t("map_eyebrow")}</span><h2>${t("map_h")}</h2>
+        <p class="lead">${t("map_lead")}</p></div>
       <div class="map-wrap">
-        ${(() => { const m = mapSvg(); return `<div class="map-card">${m.main}</div><div class="legend"><div class="inset"><b>Florida, up close</b>${m.inset}</div>`; })()}
-          <div class="row"><span class="dot"></span><span><b style="color:var(--fg)">${cityCount} cities visited</b> in ${visitedUS.length} chapters</span></div>
-          <div class="row"><span class="dot next"></span><span>${FILM.nextEpisodes.length} places on the list</span></div>
-          <div class="row"><span class="dash"></span><span>The road so far</span></div>
-          <p class="lead" style="font-size:.95rem">${FILM.goal - cityCount} cities to go before the mission is complete.</p>
+        ${(() => { const m = mapSvg(); return `<div class="map-card">${m.main}</div><div class="legend"><div class="inset"><b>${t("fl_up_close")}</b>${m.inset}</div>`; })()}
+          <div class="row"><span class="dot"></span><span>${t("legend_visited", { n: cityCount, m: visitedUS.length })}</span></div>
+          <div class="row"><span class="dot next"></span><span>${t("legend_list", { n: FILM.nextEpisodes.length })}</span></div>
+          <div class="row"><span class="dash"></span><span>${t("legend_road")}</span></div>
+          <p class="lead" style="font-size:.95rem">${t("legend_togo", { n: FILM.goal - cityCount })}</p>
         </div>
       </div>
     </div></section>
     <section class="section" id="about"><div class="container about">
-      <figure><img src="${esc(thumb(FILM.about.photo))}" alt="Matty walking along the water at blue hour" loading="lazy"></figure>
+      <figure><img src="${esc(thumb(A.photo))}" alt="${t("about_alt")}" loading="lazy"></figure>
       <div style="display:grid; gap:18px; min-width:0">
-        <span class="eyebrow">About</span><h2>Hi, I'm Matty</h2>
-        <p class="lead">${esc(FILM.about.text)}</p>
-        <div class="facts">${FILM.about.facts.map((f) => `<span>${esc(f)}</span>`).join("")}</div>
+        <span class="eyebrow">${t("about_eyebrow")}</span><h2>${t("about_h")}</h2>
+        <p class="lead">${esc(A.text)}</p>
+        <div class="facts">${A.facts.map((f) => `<span>${esc(f)}</span>`).join("")}</div>
         ${FILM.about.trailer
           ? `<video src="${esc(FILM.about.trailer)}" controls playsinline style="width:100%; border-radius:18px"></video>`
-          : `<div class="trailer-ph"><span class="pl">▶</span><span><b style="color:var(--fg)">Trailer coming soon</b><br>A short video introduction is in the edit.</span></div>`}
-        <a class="btn outline" style="justify-self:start" href="${esc(FILM.linkedin)}">Connect on LinkedIn</a>
+          : `<div class="trailer-ph"><span class="pl">▶</span><span>${t("trailer_ph")}</span></div>`}
+        <a class="btn outline" style="justify-self:start" href="${esc(FILM.linkedin)}">${t("connect")}</a>
       </div>
     </div></section>
     <section class="section alt" id="next"><div class="container">
-      <div class="head"><span class="eyebrow">Coming up</span><h2>Next episodes</h2>
-        <p class="lead">The plan: see as many cities and states as I can before August 2027.</p></div>
-      <div class="stamps">${FILM.nextEpisodes.map((n) => `<div class="stamp"><div><small>${esc(n.kind)}</small><b>${esc(n.label || n.city)}</b><small class="where">${esc(n.region)}</small></div></div>`).join("")}</div>
+      <div class="head"><span class="eyebrow">${t("next_eyebrow")}</span><h2>${t("next_h")}</h2>
+        <p class="lead">${t("next_lead")}</p></div>
+      <div class="stamps">${FILM.nextEpisodes.map(nextEp).map((n) => `<div class="stamp"><div><small>${esc(n.kind)}</small><b>${esc(n.label || n.city)}</b><small class="where">${esc(n.region)}</small></div></div>`).join("")}</div>
     </div></section>
     <section class="section" id="reading"><div class="container reading">
       <div style="display:grid; gap:16px; min-width:0; align-content:center">
-        <span class="eyebrow">Reading</span><h2>What I'm reading</h2>
-        <p class="lead">Books for flights, beach days and quiet evenings.</p>
+        <span class="eyebrow">${t("read_eyebrow")}</span><h2>${t("read_h")}</h2>
+        <p class="lead">${t("read_lead")}</p>
         <ul class="shelf-list">${FILM.books.length
-          ? FILM.books.map((b) => `<li><span><b>${esc(b.title)}</b> · ${esc(b.author)}</span><span class="lead">${esc(b.status)}</span></li>`).join("")
-          : `<li><span class="lead">The shelf is empty for now.</span><span></span></li>`}</ul>
+          ? FILM.books.map((b) => `<li><span><b>${esc(b.title)}</b> · ${esc(b.author)}</span><span class="lead">${esc(w(b.status))}</span></li>`).join("")
+          : `<li><span class="lead">${t("shelf_empty")}</span><span></span></li>`}</ul>
       </div>
-      ${FILM.nowReading && FILM.nowReading.photo ? `<figure class="read-photo"><img src="${esc(thumb(FILM.nowReading.photo))}" alt="${esc(FILM.nowReading.title)} on a beach towel" loading="lazy"><figcaption>${esc(FILM.nowReading.where)}</figcaption></figure>` : ""}
+      ${FILM.nowReading && FILM.nowReading.photo ? `<figure class="read-photo"><img src="${esc(thumb(FILM.nowReading.photo))}" alt="${t("read_alt", { t: esc(FILM.nowReading.title) })}" loading="lazy"><figcaption>${esc(readingWhere())}</figcaption></figure>` : ""}
     </div></section>
     <section class="section alt" id="your-turn"><div class="container">
-      <div class="head"><span class="eyebrow">Your turn</span><h2>Help me write the next chapter</h2>
-        <p class="lead">${FILM.goal - cityCount} cities to go and a bookshelf to fill. Tell me where to go and what to read.</p></div>
+      <div class="head"><span class="eyebrow">${t("turn_eyebrow")}</span><h2>${t("turn_h")}</h2>
+        <p class="lead">${t("turn_lead", { n: FILM.goal - cityCount })}</p></div>
       <div class="turn">
         <div class="turn-card">
-          <h3>Suggest my next city</h3>
-          <p class="lead" style="font-size:1rem">These are already on my list. Know a place I shouldn't miss?</p>
-          <div class="chips">${FILM.nextEpisodes.map((n) => `<span>${esc(n.label || n.city)}</span>`).join("")}</div>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">Send me a city</a>
-          <span class="soon">Live voting coming soon.</span>
+          <h3>${t("city_h")}</h3>
+          <p class="lead" style="font-size:1rem">${t("city_lead")}</p>
+          <div class="chips">${FILM.nextEpisodes.map(nextEp).map((n) => `<span>${esc(n.label || n.city)}</span>`).join("")}</div>
+          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">${t("send_city")}</a>
+          <span class="soon">${t("voting_soon")}</span>
         </div>
         <div class="turn-card">
-          <h3>Recommend me a book</h3>
-          <p class="lead" style="font-size:1rem">Right now: ${esc(FILM.nowReading ? FILM.nowReading.title : "nothing")}. What should be next on the shelf?</p>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">Send a book tip</a>
-          <span class="soon">Readers' shelf coming soon.</span>
+          <h3>${t("book_h")}</h3>
+          <p class="lead" style="font-size:1rem">${t("book_lead", { t: esc(FILM.nowReading ? FILM.nowReading.title : t("nothing")) })}</p>
+          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">${t("send_book")}</a>
+          <span class="soon">${t("shelf_soon")}</span>
         </div>
       </div>
     </div></section>
@@ -962,10 +999,11 @@ function watchVideos() {
 }
 
 let gallery = [], gi = 0;
-function renderChapter(c) {
+function renderChapter(c0) {
+  const c = L(c0);
   document.title = `${c.city} · My American Year`;
-  const i = FILM.chapters.indexOf(c);
-  const prev = FILM.chapters[i - 1], next = FILM.chapters[i + 1];
+  const i = FILM.chapters.indexOf(c0);
+  const prev = FILM.chapters[i - 1] && L(FILM.chapters[i - 1]), next = FILM.chapters[i + 1] && L(FILM.chapters[i + 1]);
   const cover = c.cover || (c.photos[0] && c.photos[0].src);
   const heroVid = c.photos.find((p) => p.video);
   const best = highlights(c.photos);
@@ -983,32 +1021,32 @@ function renderChapter(c) {
       </div>
     </section>
     <section class="section"><div class="container narration">
-      <div class="label"><span class="eyebrow">Narration</span><b>${esc(c.sub)}</b>
-        <p class="where-note"><span class="eyebrow">Where exactly</span>${esc(c.place)}${(c.alsoIn || []).length ? " Also in this chapter: " + c.alsoIn.map((a) => `<b>${esc(a.name)}</b> (${esc(a.kind.toLowerCase())}, ${esc(a.note)}${a.counts ? ", counted as its own city" : ""})`).join("; ") + "." : ""}</p></div>
-      <p class="voice${c.narration ? "" : " todo"}">${c.narration ? "“" + esc(c.narration) + "”" : "Still in the edit. My words about " + esc(c.city) + " are coming soon."}</p>
+      <div class="label"><span class="eyebrow">${t("narration")}</span><b>${esc(c.sub)}</b>
+        <p class="where-note"><span class="eyebrow">${t("where_exactly")}</span>${esc(c.place)}${(c.alsoIn || []).length ? " " + t("also_in") + " " + c.alsoIn.map((a) => `<b>${esc(a.name)}</b> (${esc(a.kind.toLowerCase())}, ${esc(a.note)}${a.counts ? t("counted") : ""})`).join("; ") + "." : ""}</p></div>
+      <p class="voice${c.narration ? "" : " todo"}">${c.narration ? "“" + esc(c.narration) + "”" : t("narration_todo", { c: esc(c.city) })}</p>
     </div></section>
     <section class="section" style="padding-top:0"><div class="container">
-      <div class="head" style="margin-bottom:28px; text-align:left; justify-items:start"><span class="eyebrow">Field notes</span><h2 style="font-size:clamp(1.6rem,3.4vw,2.2rem)">My favourites in ${esc(c.city)}</h2></div>
+      <div class="head" style="margin-bottom:28px; text-align:left; justify-items:start"><span class="eyebrow">${t("field_notes")}</span><h2 style="font-size:clamp(1.6rem,3.4vw,2.2rem)">${t("favourites_in", { c: esc(c.city) })}</h2></div>
       <div class="tips">${(c.tips && c.tips.length)
         ? c.tips.map((t) => `<div class="tip"><small>${esc(t.label)}</small><p>${esc(t.text)}</p></div>`).join("")
-        : ["Don't miss", "Eat", "Best time"].map((l) => `<div class="tip todo"><small>${l}</small><p>Coming soon</p></div>`).join("")}</div>
+        : ["tip_dont_miss", "tip_eat", "tip_best_time"].map((l) => `<div class="tip todo"><small>${t(l)}</small><p>${t("coming_soon")}</p></div>`).join("")}</div>
     </div></section>
     <section class="section alt" style="padding-top:64px"><div class="container">
-      <div class="head" style="margin-bottom:32px"><span class="eyebrow">The footage</span><h2>Scenes from ${esc(c.city)}</h2>
-        ${c.photos.length > 12 ? `<p class="lead">My ${best.size} favourites first. All ${c.photos.length} scenes are one tap away.</p>` : ""}</div>
+      <div class="head" style="margin-bottom:32px"><span class="eyebrow">${t("footage")}</span><h2>${t("scenes_from", { c: esc(c.city) })}</h2>
+        ${c.photos.length > 12 ? `<p class="lead">${t("favs_first", { n: best.size, m: c.photos.length })}</p>` : ""}</div>
       ${c.photos.length
         ? `<div class="mosaic">${c.photos.map((p, k) =>
-            `<button type="button" class="tile ${esc(p.size || "")}" data-i="${k}"${best.has(k) ? "" : " hidden"} aria-label="Open ${p.video ? "video" : "photo"}: ${esc(p.cap)}">
+            `<button type="button" class="tile ${esc(p.size || "")}" data-i="${k}"${best.has(k) ? "" : " hidden"} aria-label="${t(p.video ? "open_video" : "open_photo", { c: esc(p.cap) })}">
                ${p.video
-                 ? `<video data-src="${esc(p.video)}" poster="${esc(thumb(p.src))}" muted loop playsinline preload="none"></video><span class="live-tag">▶ Live</span>`
+                 ? `<video data-src="${esc(p.video)}" poster="${esc(thumb(p.src))}" muted loop playsinline preload="none"></video><span class="live-tag">${t("live")}</span>`
                  : `<img src="${esc(thumb(p.src))}" alt="${esc(p.cap)}" loading="lazy">`}
                <span class="cap">${esc(p.cap)}</span></button>`).join("")}</div>
-           ${c.photos.length > best.size ? `<div class="more-row"><button type="button" class="btn outline" id="seeAll">See all ${c.photos.length} scenes</button></div>` : ""}`
-        : `<div class="in-edit"><b>Footage in the edit</b><span>Photos from ${esc(c.city)} are on their way.</span></div>`}
+           ${c.photos.length > best.size ? `<div class="more-row"><button type="button" class="btn outline" id="seeAll">${t("see_all", { n: c.photos.length })}</button></div>` : ""}`
+        : `<div class="in-edit"><b>${t("footage_edit")}</b><span>${t("photos_on_way", { c: esc(c.city) })}</span></div>`}
     </div></section>
     <section class="section" style="padding-block:56px"><div class="container pager">
       ${prev ? `<a href="#chapter-${prev.id}"><small>← ${esc(prev.no)}</small><b>${esc(prev.city)}</b></a>` : "<span></span>"}
-      <span style="display:grid; gap:10px; justify-items:center"><a class="all btn" href="#episodes">All chapters</a><button type="button" class="share-btn" id="shareCh" data-url="https://matjat23.github.io/chapter/${esc(c.id)}/" data-title="${esc(c.city)} · My American Year">Share this chapter</button></span>
+      <span style="display:grid; gap:10px; justify-items:center"><a class="all btn" href="#episodes">${t("all_chapters")}</a><button type="button" class="share-btn" id="shareCh" data-url="https://matjat23.github.io/chapter/${esc(c.id)}/" data-title="${esc(c.city)} · My American Year">${t("share")}</button></span>
       ${next ? `<a class="next" href="#chapter-${next.id}"><small>${esc(next.no)} →</small><b>${esc(next.city)}</b></a>` : "<span></span>"}
     </div></section>
   </div>`;
@@ -1026,7 +1064,7 @@ function route() {
     if (sh) sh.addEventListener("click", async () => {
       const url = sh.dataset.url;
       try { if (navigator.share) { await navigator.share({ title: sh.dataset.title, url }); return; } } catch (e) { return; }
-      try { await navigator.clipboard.writeText(url); sh.textContent = "Link copied"; } catch (e) { prompt("Copy this link:", url); }
+      try { await navigator.clipboard.writeText(url); sh.textContent = t("copied"); } catch (e) { prompt(t("copy_prompt"), url); }
     });
     const more = $("seeAll");
     if (more) more.addEventListener("click", () => {
@@ -1041,6 +1079,12 @@ function route() {
   const target = h && h !== "home" ? document.getElementById(h) : null;
   if (target) target.scrollIntoView(); else if (wasChapter || h === "home") window.scrollTo(0, 0);
 }
+applyStatic();
+$("langSwitch").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-lang]"); if (!b || b.dataset.lang === lang) return;
+  lang = b.dataset.lang; try { localStorage.setItem("lang", lang); } catch (e) {}
+  const y = window.scrollY; applyStatic(); route(); if (app.dataset.view !== "chapter") window.scrollTo(0, y);
+});
 window.addEventListener("hashchange", () => { route(); if (location.hash.startsWith("#chapter-")) app.dataset.view = "chapter"; });
 route();
 if (location.hash.startsWith("#chapter-")) app.dataset.view = "chapter";
