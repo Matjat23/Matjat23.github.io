@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta property="og:url" content="https://matjat23.github.io/">
+<link rel="canonical" href="https://matjat23.github.io/">
 <title>My American Year</title>
 <meta name="description" content="A personal documentary by Matty Jatta: one year in America, one chapter per city, and a mission to see 100 cities.">
 <meta property="og:title" content="My American Year">
@@ -12,6 +13,9 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#121214">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,500&family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600&display=swap">
@@ -165,6 +169,10 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .pager a small { font-family: var(--f-head); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 .pager a b { font-family: var(--f-serif); font-size: 1.25rem; }
 .pager .next { text-align: right; }
+.share-btn { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; }
+.share-btn:hover { color: var(--accent); }
+.tally { margin: 18px 0 0; text-align: center; font-size: .95rem; opacity: .85; }
+.tally b { color: var(--accent); font-weight: 700; }
 .pager .all { padding: 12px 20px; border-radius: 999px; font-family: var(--f-head); font-weight: 600; font-size: .85rem; }
 
 /* BEST OF / SEE ALL */
@@ -788,7 +796,7 @@ const today = new Date(); today.setHours(0, 0, 0, 0);
 const days = Math.max(1, Math.floor((today - new Date(FILM.arrived + "T00:00:00")) / 86400000) + 1);
 
 // Small 800px copies for grids and cards; full size only in the photo viewer.
-const thumb = (src) => /\.jpg$/.test(src || "") ? src.replace("media/", "media/thumbs/") : src;
+const thumb = (src) => /\.jpg$/.test(src || "") ? src.replace("media/", "media/thumbs/").replace(/\.jpg$/, ".webp") : src;
 
 function mapSvg() {
   const M = FILM.map, xy = M.xy;
@@ -826,7 +834,7 @@ function mapSvg() {
 function poster(c, feature) {
   const ready = c.photos.length > 0;
   return `<a class="ep${feature ? " feature" : ""}${ready ? "" : " poster-fill"}" href="#chapter-${c.id}">
-    ${ready ? `<img src="${esc(thumb(c.cover || c.photos[0].src))}" alt="" loading="lazy">` : `<span class="city-mark" aria-hidden="true">${esc(c.city)}</span>`}
+    ${ready ? `<img src="${esc(thumb(c.cover || c.photos[0].src))}" alt="${esc(c.city)}, ${esc(c.region)}" loading="lazy">` : `<span class="city-mark" aria-hidden="true">${esc(c.city)}</span>`}
     <span class="badge${ready ? " live" : ""}">${ready ? `${c.photos.length} scenes${c.photos.some((p) => p.video) ? " · ▶ video" : ""}` : "In the edit"}</span>
     <span class="play" aria-hidden="true">▶</span>
     <span class="info"><span class="no">${esc(c.no)}</span><h3>${esc(c.city)}</h3><span class="meta">${esc(c.when)} · ${esc(c.sub)}</span></span>
@@ -858,6 +866,11 @@ function renderHome() {
       <div class="mission-track" role="progressbar" aria-label="Cities visited out of ${FILM.goal}" aria-valuenow="${cityCount}" aria-valuemax="${FILM.goal}">
         ${Array.from({ length: FILM.goal }, (_, k) => `<i class="${k < cityCount ? "on" : ""}"></i>`).join("")}
       </div>
+      <p class="tally">${(() => {
+        const ph = FILM.chapters.flatMap((c) => c.photos);
+        const vids = ph.filter((p) => p.video).length;
+        return `<b>${ph.length}</b> scenes · <b>${vids}</b> video clips · <b>${FILM.chapters.length}</b> chapters · <b>${FILM.books.length}</b> ${FILM.books.length === 1 ? "book" : "books"} on the shelf`;
+      })()}</p>
       <p class="count-rule">What counts: every US city, town or village I visit counts once. Neighbourhoods, parks and highway stops don't, and states are counted separately.</p>
     </div></section>
     <section class="section" id="episodes"><div class="container">
@@ -960,8 +973,8 @@ function renderChapter(c) {
   app.innerHTML = `<div class="view">
     <section class="hero short${cover ? "" : " poster-fill"}">
       ${heroVid
-        ? `<video class="hero-video" src="${esc(heroVid.video)}" poster="${esc(heroVid.src)}" muted loop playsinline autoplay></video>`
-        : cover ? `<img src="${esc(cover)}" alt="">` : ""}
+        ? `<video class="hero-video" src="${esc(heroVid.video)}" poster="${esc(heroVid.src)}" muted loop playsinline autoplay aria-label="${esc(heroVid.cap)}"></video>`
+        : cover ? `<img src="${esc(cover)}" alt="${esc(c.city)}, ${esc(c.region)}">` : ""}
       <div class="container">
         <p class="credit">${esc(c.no)} · ${esc(c.county)} · ${esc(c.region)}${c.country !== "USA" ? " · " + esc(c.country) : ""}</p>
         <h1>${esc(c.city)}</h1>
@@ -995,7 +1008,7 @@ function renderChapter(c) {
     </div></section>
     <section class="section" style="padding-block:56px"><div class="container pager">
       ${prev ? `<a href="#chapter-${prev.id}"><small>← ${esc(prev.no)}</small><b>${esc(prev.city)}</b></a>` : "<span></span>"}
-      <a class="all btn" href="#episodes">All chapters</a>
+      <span style="display:grid; gap:10px; justify-items:center"><a class="all btn" href="#episodes">All chapters</a><button type="button" class="share-btn" id="shareCh" data-url="https://matjat23.github.io/chapter/${esc(c.id)}/" data-title="${esc(c.city)} · My American Year">Share this chapter</button></span>
       ${next ? `<a class="next" href="#chapter-${next.id}"><small>${esc(next.no)} →</small><b>${esc(next.city)}</b></a>` : "<span></span>"}
     </div></section>
   </div>`;
@@ -1009,6 +1022,12 @@ function route() {
     renderChapter(ch); window.scrollTo(0, 0);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) app.querySelectorAll("video").forEach((v) => { v.removeAttribute("autoplay"); v.pause(); });
     watchVideos();
+    const sh = $("shareCh");
+    if (sh) sh.addEventListener("click", async () => {
+      const url = sh.dataset.url;
+      try { if (navigator.share) { await navigator.share({ title: sh.dataset.title, url }); return; } } catch (e) { return; }
+      try { await navigator.clipboard.writeText(url); sh.textContent = "Link copied"; } catch (e) { prompt("Copy this link:", url); }
+    });
     const more = $("seeAll");
     if (more) more.addEventListener("click", () => {
       app.querySelectorAll(".tile[hidden]").forEach((t) => (t.hidden = false));
@@ -1033,7 +1052,7 @@ function show(k) {
   const p = gallery[gi];
   const vid = $("lbVid"), img = $("lbImg");
   vid.hidden = !p.video; img.hidden = !!p.video;
-  if (p.video) { vid.src = p.video; vid.poster = p.src; vid.play().catch(() => {}); } else { vid.pause(); vid.removeAttribute("src"); img.src = p.src; img.alt = p.cap; }
+  if (p.video) { vid.src = p.video; vid.poster = p.src; vid.setAttribute("aria-label", p.cap); vid.play().catch(() => {}); } else { vid.pause(); vid.removeAttribute("src"); img.src = p.src; img.alt = p.cap; }
   $("lbCap").textContent = `${p.cap} · ${gi + 1} / ${gallery.length}`;
 }
 app.addEventListener("click", (ev) => {
