@@ -1063,6 +1063,8 @@ window.addEventListener("pointermove", (e) => followCursor(e.clientX, e.clientY)
 // Scroll reveal, count-up numbers, reading progress, back to top.
 let revealObs;
 function reveal() {
+  // Videos added with innerHTML don't count as muted, so browsers block autoplay unless we set it here.
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) app.querySelectorAll("video[autoplay]").forEach((v) => { v.muted = true; v.play().catch(() => {}); });
   if (revealObs) revealObs.disconnect();
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const els = app.querySelectorAll(".head, .ep, .stamp, .tip, .turn-card, .about > *, .reading > *, .map-wrap, .narration > *, .pager");
