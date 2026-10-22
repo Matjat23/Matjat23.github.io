@@ -221,6 +221,18 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .about figure img { width: 100%; height: 100%; object-fit: cover; }
 .about .facts { display: flex; flex-wrap: wrap; gap: 8px; }
 .about .facts span { font-family: var(--f-head); font-size: .8rem; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); }
+.me { display: flex; align-items: center; gap: 16px; }
+.me-face { flex: none; width: 112px; height: 112px; padding: 0; border: 0; border-radius: 50%; background: var(--alt); cursor: pointer; box-shadow: var(--shadow); overflow: hidden; }
+.me-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.me-face svg { width: 100%; height: 100%; display: block; }
+.me-face:hover { transform: rotate(-3deg); transition: transform .2s; }
+.me-face .lid { transform-origin: center; transform-box: fill-box; animation: blink 5s infinite; }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(0); } 96% { transform: scaleY(1); } }
+.me-bubble { position: relative; margin: 0; padding: 14px 18px; border-radius: 18px; background: var(--card, #fff); color: var(--fg); border: 1px solid var(--line); font-size: 1rem; line-height: 1.45; min-height: 3.2em; max-width: 34ch; box-shadow: var(--shadow); }
+.me-bubble::before { content: ""; position: absolute; left: -8px; top: 50%; width: 14px; height: 14px; background: inherit; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: translateY(-50%) rotate(45deg); }
+.me-bubble .caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--accent); animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .me-face .lid, .me-bubble .caret { animation: none; } }
 .trailer-ph { border: 2px dashed var(--line); border-radius: 18px; padding: 18px 20px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
 .trailer-ph .pl { width: 44px; height: 44px; border-radius: 50%; background: var(--alt); display: grid; place-items: center; color: var(--accent); flex: none; }
 
@@ -316,6 +328,7 @@ const FILM = {
   goal: 100, // the mission: 100 cities
   hero: "media/hero-palms.jpg",
   linkedin: "https://www.linkedin.com/in/matty-jatta-b11880199/",
+  avatar: { frames: {} }, // { c, l, r, u, d, ul, ur, dl, dr } -> "media/avatar/<name>.png"
   about: {
     photo: "media/st-augustine-blue-hour-reflection.jpg",
     text: "I'm Matty, from Gothenburg, Sweden. This year I live in St. Augustine, Florida, where I work as a software and automation engineer, building software for self-driving vehicles. Off the clock I run, read, chase sunsets and collect cities. This site is my documentary of the year: every place I visit becomes a chapter.",
@@ -935,6 +948,10 @@ function renderHome() {
     <section class="section" id="about"><div class="container about">
       <figure><img src="${esc(thumb(A.photo))}" alt="${t("about_alt")}" loading="lazy"></figure>
       <div style="display:grid; gap:18px; min-width:0">
+        <div class="me" id="me">
+          <button type="button" class="me-face" id="meFace" aria-label="${t("avatar_label")}">${avatarFace()}</button>
+          <p class="me-bubble" id="meBubble" aria-live="polite"></p>
+        </div>
         <span class="eyebrow">${t("about_eyebrow")}</span><h2>${t("about_h")}</h2>
         <p class="lead">${esc(A.text)}</p>
         <div class="facts">${A.facts.map((f) => `<span>${esc(f)}</span>`).join("")}</div>
@@ -980,6 +997,60 @@ function renderHome() {
     </div></section>
   </div>`;
 }
+
+// Cartoon me: 9 frames picked by cursor direction, or a drawn face whose pupils follow the cursor.
+function avatarFace() {
+  const f = FILM.avatar.frames;
+  if (f.c) return `<img id="meImg" src="${esc(f.c)}" alt="">`;
+  return `<svg viewBox="0 0 120 120" aria-hidden="true">
+    <circle cx="60" cy="60" r="60" fill="#f3d9c4"/>
+    <g fill="#1d1411"><circle cx="30" cy="40" r="20"/><circle cx="48" cy="26" r="20"/><circle cx="72" cy="26" r="20"/><circle cx="90" cy="40" r="20"/><circle cx="22" cy="62" r="16"/><circle cx="98" cy="62" r="16"/><circle cx="20" cy="84" r="14"/><circle cx="100" cy="84" r="14"/></g>
+    <ellipse cx="60" cy="72" rx="31" ry="35" fill="#7a4a2e"/>
+    <g fill="#fff"><ellipse cx="48" cy="68" rx="8" ry="9"/><ellipse cx="72" cy="68" rx="8" ry="9"/></g>
+    <g fill="#1d1411"><circle id="pupL" cx="48" cy="69" r="4.2"/><circle id="pupR" cx="72" cy="69" r="4.2"/></g>
+    <g fill="#7a4a2e"><ellipse class="lid" cx="48" cy="68" rx="9" ry="10"/><ellipse class="lid" cx="72" cy="68" rx="9" ry="10"/></g>
+    <path d="M50 88 Q60 96 70 88" stroke="#3a1f12" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <g fill="#e8784a" opacity=".35"><circle cx="40" cy="82" r="5"/><circle cx="80" cy="82" r="5"/></g>
+  </svg>`;
+}
+let meTimer = null, meLine = 0;
+function startAvatar() {
+  clearTimeout(meTimer);
+  const bubble = $("meBubble"), face = $("meFace");
+  if (!bubble || !face) return;
+  const lines = t("avatar_lines").split("|");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  meLine = 0;
+  const say = (k) => {
+    clearTimeout(meTimer);
+    const text = lines[k % lines.length]; let n = 0;
+    if (reduce) { bubble.textContent = text; meTimer = setTimeout(() => say(k + 1), 6000); return; }
+    const step = () => {
+      bubble.innerHTML = esc(text.slice(0, n)) + '<span class="caret"></span>';
+      if (n++ < text.length) meTimer = setTimeout(step, 32);
+      else meTimer = setTimeout(() => say(k + 1), 3200);
+    };
+    step();
+  };
+  face.onclick = () => { meLine++; say(meLine); };
+  say(0);
+  Object.values(FILM.avatar.frames).forEach((src) => { const i = new Image(); i.src = src; });
+}
+function followCursor(x, y) {
+  const face = $("meFace"); if (!face) return;
+  const r = face.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy) || 1;
+  const f = FILM.avatar.frames;
+  if (f.c) {
+    let key = "c";
+    if (d > 90) { const h = dx < -d * .38 ? "l" : dx > d * .38 ? "r" : "", v = dy < -d * .38 ? "u" : dy > d * .38 ? "d" : ""; key = (v + h) || "c"; }
+    const img = $("meImg"); if (img && f[key] && !img.src.endsWith(f[key])) img.src = f[key];
+    return;
+  }
+  const m = Math.min(1, d / 220) * 3.4;
+  [["pupL", 48], ["pupR", 72]].forEach(([id, x0]) => { const e = $(id); if (e) { e.setAttribute("cx", x0 + (dx / d) * m); e.setAttribute("cy", 69 + (dy / d) * m); } });
+}
+window.addEventListener("pointermove", (e) => followCursor(e.clientX, e.clientY), { passive: true });
 
 // Pick up to 12 highlights: big/wide scenes first (in story order), then fill from the start.
 function highlights(photos) {
@@ -1080,6 +1151,7 @@ function route() {
   }
   const wasChapter = app.dataset.view === "chapter";
   renderHome();
+  startAvatar();
   app.dataset.view = "home";
   const target = h && h !== "home" ? document.getElementById(h) : null;
   if (target) target.scrollIntoView(); else if (wasChapter || h === "home") window.scrollTo(0, 0);
