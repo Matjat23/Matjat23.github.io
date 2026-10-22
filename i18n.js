@@ -5,6 +5,7 @@ const LANGS = { en: "English", sv: "Svenska", fr: "Français" };
 
 const UI = {
   en: {
+    to_top: "Back to top",
     avatar_label: "Cartoon Matty, click to hear more", avatar_lines: "Hi! I'm Matty 👋|Welcome to my American year.|I'm from Gothenburg, living in St. Augustine, Florida.|Every city I visit becomes a chapter. Tap one to watch.|The mission: 100 cities. Got a tip? Send it my way!",
     nav_chapters: "Chapters", nav_map: "Map", nav_about: "About", nav_reading: "Reading",
     footer: "A personal documentary", lang_label: "Language",
@@ -39,6 +40,7 @@ const UI = {
     open_photo: "Open photo: {c}", open_video: "Open video: {c}", live: "▶ Live",
   },
   sv: {
+    to_top: "Till toppen",
     avatar_label: "Tecknade Matty, klicka för att höra mer", avatar_lines: "Hej! Jag heter Matty 👋|Välkommen till mitt amerikanska år.|Jag kommer från Göteborg och bor i St. Augustine i Florida.|Varje stad jag besöker blir ett kapitel. Tryck på ett för att titta.|Uppdraget: 100 städer. Har du ett tips? Skicka det till mig!",
     nav_chapters: "Kapitel", nav_map: "Karta", nav_about: "Om mig", nav_reading: "Läsning",
     footer: "En personlig dokumentär", lang_label: "Språk",
@@ -73,6 +75,7 @@ const UI = {
     open_photo: "Öppna bild: {c}", open_video: "Öppna video: {c}", live: "▶ Live",
   },
   fr: {
+    to_top: "Retour en haut",
     avatar_label: "Matty en dessin, cliquez pour en savoir plus", avatar_lines: "Salut ! Moi c'est Matty 👋|Bienvenue dans mon année américaine.|Je viens de Göteborg et je vis à St. Augustine, en Floride.|Chaque ville que je visite devient un chapitre. Touchez-en un pour regarder.|La mission : 100 villes. Un conseil ? Envoyez-le-moi !",
     nav_chapters: "Chapitres", nav_map: "Carte", nav_about: "À propos", nav_reading: "Lectures",
     footer: "Un documentaire personnel", lang_label: "Langue",

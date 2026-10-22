@@ -233,6 +233,11 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .me-bubble .caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--accent); animation: caret 1s steps(1) infinite; }
 @keyframes caret { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .me-face .lid, .me-bubble .caret { animation: none; } }
+.progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 30; background: var(--accent); transition: width .1s linear; }
+.to-top { position: fixed; right: 20px; bottom: 20px; z-index: 25; width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 1.2rem; cursor: pointer; box-shadow: var(--shadow); }
+.rv { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
+.rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; transition: none; } }
 .trailer-ph { border: 2px dashed var(--line); border-radius: 18px; padding: 18px 20px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
 .trailer-ph .pl { width: 44px; height: 44px; border-radius: 50%; background: var(--alt); display: grid; place-items: center; color: var(--accent); flex: none; }
 
@@ -299,7 +304,9 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
   </div>
 </header>
 
+<div class="progress" id="progress" aria-hidden="true"></div>
 <main id="app"></main>
+<button type="button" class="to-top" id="toTop" data-ta="to_top" aria-label="Back to top" hidden>↑</button>
 
 <footer>
   <div class="container">
@@ -317,7 +324,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
   <p id="lbCap"></p>
 </dialog>
 
-<script src="i18n.js?v=7b7052b1"></script>
+<script src="i18n.js?v=63c1d4b6"></script>
 <script src="i18n-caps.js?v=60b6003f"></script>
 <script>
 /* ================= THE DOCUMENTARY (edit here) =================
@@ -327,6 +334,7 @@ const FILM = {
   arrived: "2026-08-03",
   goal: 100, // the mission: 100 cities
   hero: "media/hero-palms.jpg",
+  heroVideo: "media/hero-loop.mp4", heroPoster: "media/hero-loop-poster.jpg",
   linkedin: "https://www.linkedin.com/in/matty-jatta-b11880199/",
   avatar: { frames: {} }, // { c, l, r, u, d, ul, ur, dl, dr } -> "media/avatar/<name>.png"
   about: {
@@ -901,7 +909,7 @@ function renderHome() {
   const [first, ...rest] = FILM.chapters;
   app.innerHTML = `<div class="view">
     <section class="hero">
-      <img src="${FILM.hero}" alt="${t("hero_alt")}">
+      ${FILM.heroVideo && !matchMedia("(prefers-reduced-motion: reduce)").matches ? `<video class="hero-video" src="${FILM.heroVideo}" poster="${FILM.heroPoster}" muted loop playsinline autoplay aria-hidden="true"></video>` : `<img src="${FILM.hero}" alt="${t("hero_alt")}">`}
       <div class="container">
         <p class="credit">${t("credit")}</p>
         <h1>My American Year</h1>
@@ -911,10 +919,10 @@ function renderHome() {
       </div>
     </section>
     <section class="band" aria-label="${t("band_label")}"><div class="container">
-      <div class="stat"><b class="num">${days}</b><span>${t("days")}</span></div>
-      <div class="stat"><b class="num">${cityCount}</b><span>${t("cities_visited")}</span></div>
-      <div class="stat"><b class="num">${stateCount}</b><span>${t(stateCount === 1 ? "state_so_far" : "states_so_far")}</span></div>
-      <div class="stat"><b class="num">${FILM.goal - cityCount}</b><span>${t("cities_to_go")}</span></div>
+      <div class="stat"><b class="num" data-count="${days}">${days}</b><span>${t("days")}</span></div>
+      <div class="stat"><b class="num" data-count="${cityCount}">${cityCount}</b><span>${t("cities_visited")}</span></div>
+      <div class="stat"><b class="num" data-count="${stateCount}">${stateCount}</b><span>${t(stateCount === 1 ? "state_so_far" : "states_so_far")}</span></div>
+      <div class="stat"><b class="num" data-count="${FILM.goal - cityCount}">${FILM.goal - cityCount}</b><span>${t("cities_to_go")}</span></div>
     </div>
     <div class="container mission">
       <div class="mission-top"><span>${t("mission", { n: FILM.goal })}</span><span class="num">${cityCount} / ${FILM.goal}</span></div>
@@ -1052,6 +1060,35 @@ function followCursor(x, y) {
 }
 window.addEventListener("pointermove", (e) => followCursor(e.clientX, e.clientY), { passive: true });
 
+// Scroll reveal, count-up numbers, reading progress, back to top.
+let revealObs;
+function reveal() {
+  if (revealObs) revealObs.disconnect();
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const els = app.querySelectorAll(".head, .ep, .stamp, .tip, .turn-card, .about > *, .reading > *, .map-wrap, .narration > *, .pager");
+  els.forEach((e, i) => { e.classList.add("rv"); e.style.transitionDelay = (i % 4) * 70 + "ms"; });
+  revealObs = new IntersectionObserver((entries) => entries.forEach((en) => {
+    if (!en.isIntersecting) return;
+    en.target.classList.add("in"); revealObs.unobserve(en.target);
+    en.target.querySelectorAll && en.target.querySelectorAll("[data-count]").forEach((n) => countUp(n, reduce));
+  }), { rootMargin: "0px 0px -8% 0px" });
+  els.forEach((e) => revealObs.observe(e));
+  const band = app.querySelector(".band");
+  if (band) { band.classList.add("rv"); revealObs.observe(band); }
+}
+function countUp(el, reduce) {
+  const end = +el.dataset.count; if (reduce || !end) { el.textContent = end; return; }
+  const t0 = performance.now(), dur = 1100;
+  const tick = (now) => { const k = Math.min(1, (now - t0) / dur); el.textContent = Math.round(end * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+}
+function onScroll() {
+  const h = document.documentElement, max = h.scrollHeight - innerHeight;
+  const bar = $("progress"); if (bar) bar.style.width = app.dataset.view === "chapter" && max > 0 ? (scrollY / max) * 100 + "%" : "0";
+  const top = $("toTop"); if (top) top.hidden = scrollY < 900;
+}
+window.addEventListener("scroll", onScroll, { passive: true });
+
 // Pick up to 12 highlights: big/wide scenes first (in story order), then fill from the start.
 function highlights(photos) {
   if (photos.length <= 12) return new Set(photos.map((_, i) => i));
@@ -1133,7 +1170,7 @@ function route() {
   const ch = h.startsWith("chapter-") && FILM.chapters.find((c) => "chapter-" + c.id === h);
   document.querySelectorAll("[data-nav]").forEach((a) => a.toggleAttribute("aria-current", !ch && false));
   if (ch) {
-    renderChapter(ch); window.scrollTo(0, 0);
+    renderChapter(ch); window.scrollTo(0, 0); reveal();
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) app.querySelectorAll("video").forEach((v) => { v.removeAttribute("autoplay"); v.pause(); });
     watchVideos();
     const sh = $("shareCh");
@@ -1152,6 +1189,7 @@ function route() {
   const wasChapter = app.dataset.view === "chapter";
   renderHome();
   startAvatar();
+  reveal();
   app.dataset.view = "home";
   const target = h && h !== "home" ? document.getElementById(h) : null;
   if (target) target.scrollIntoView(); else if (wasChapter || h === "home") window.scrollTo(0, 0);
@@ -1181,6 +1219,10 @@ app.addEventListener("click", (ev) => {
   show(+t.dataset.i); lb.showModal();
 });
 $("lbClose").addEventListener("click", () => lb.close());
+$("toTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
+let swipeX = null;
+lb.addEventListener("touchstart", (e) => { swipeX = e.touches[0].clientX; }, { passive: true });
+lb.addEventListener("touchend", (e) => { if (swipeX === null) return; const dx = e.changedTouches[0].clientX - swipeX; swipeX = null; if (Math.abs(dx) > 50) show(gi + (dx < 0 ? 1 : -1)); });
 lb.addEventListener("close", () => $("lbVid").pause());
 $("lbPrev").addEventListener("click", () => show(gi - 1));
 $("lbNext").addEventListener("click", () => show(gi + 1));
