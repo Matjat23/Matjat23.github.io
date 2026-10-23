@@ -1041,7 +1041,8 @@ function renderHome() {
           <h3>${t("city_h")}</h3>
           <p class="lead" style="font-size:1rem">${t("city_lead")}</p>
           <div class="chips">${FILM.nextEpisodes.map(nextEp).map((n) => `<span>${esc(n.label || n.city)}</span>`).join("")}</div>
-          <form class="suggest" data-kind="City" autocomplete="off">
+          <button type="button" class="btn open-suggest" style="justify-self:start" aria-expanded="false">${t("send_city")}</button>
+          <form class="suggest" data-kind="City" autocomplete="off" hidden>
             <input name="s" required maxlength="80" placeholder="${t("ph_city")}" aria-label="${t("ph_city")}">
             <textarea name="note" rows="2" maxlength="280" placeholder="${t("ph_note")}" aria-label="${t("ph_note")}"></textarea>
             <div class="suggest-row"><input name="name" maxlength="40" placeholder="${t("ph_name")}" aria-label="${t("ph_name")}"><input name="website" class="hp" tabindex="-1" aria-hidden="true"><button class="btn" type="submit">${t("send")}</button></div>
@@ -1053,7 +1054,8 @@ function renderHome() {
         <div class="turn-card">
           <h3>${t("book_h")}</h3>
           <p class="lead" style="font-size:1rem">${t("book_lead", { t: esc(FILM.nowReading ? FILM.nowReading.title : t("nothing")) })}</p>
-          <form class="suggest" data-kind="Book" autocomplete="off">
+          <button type="button" class="btn open-suggest" style="justify-self:start" aria-expanded="false">${t("send_book")}</button>
+          <form class="suggest" data-kind="Book" autocomplete="off" hidden>
             <input name="s" required maxlength="80" placeholder="${t("ph_book")}" aria-label="${t("ph_book")}">
             <textarea name="note" rows="2" maxlength="280" placeholder="${t("ph_note")}" aria-label="${t("ph_note")}"></textarea>
             <div class="suggest-row"><input name="name" maxlength="40" placeholder="${t("ph_name")}" aria-label="${t("ph_name")}"><input name="website" class="hp" tabindex="-1" aria-hidden="true"><button class="btn" type="submit">${t("send")}</button></div>
@@ -1214,6 +1216,10 @@ async function loadReaders() {
 // send it "no-cors" and show it straight away; it stays in this browser until the sheet includes it.
 let lastSent = 0;
 function wireSuggest() {
+  app.querySelectorAll(".open-suggest").forEach((b) => b.addEventListener("click", () => {
+    const f = b.nextElementSibling; f.hidden = false; b.hidden = true; b.setAttribute("aria-expanded", "true");
+    f.querySelector("input").focus();
+  }));
   app.querySelectorAll("form.suggest").forEach((f) => f.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const msg = f.querySelector(".suggest-msg"), btn = f.querySelector("button");
