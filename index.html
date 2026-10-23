@@ -261,6 +261,14 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .turn-card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 28px; display: grid; gap: 12px; align-content: start; }
 .turn-card h3 { font-family: var(--f-serif); font-size: 1.5rem; }
 .turn-card .soon { font-size: .82rem; color: var(--muted); font-style: italic; }
+.suggest { display: grid; gap: 8px; }
+.suggest input, .suggest textarea { width: 100%; font: inherit; font-size: .95rem; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); resize: vertical; }
+.suggest input:focus, .suggest textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+.suggest-row { display: flex; gap: 8px; }
+.suggest-row input { flex: 1; min-width: 0; }
+.suggest .hp { position: absolute; left: -9999px; width: 1px; height: 1px; }
+.suggest-msg { margin: 0; font-size: .85rem; color: var(--accent); min-height: 1.2em; }
+.readers li.mine b::after { content: " ✓"; color: var(--accent); }
 .readers { display: grid; gap: 10px; margin-top: 6px; padding-top: 16px; border-top: 1px solid var(--line); }
 .readers small { font-family: var(--f-head); font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
 .readers ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -348,7 +356,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 
 <script>window.goatcounter = { no_onload: true, allow_local: false };</script>
 <script data-goatcounter="https://myamericanyear.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-<script src="i18n.js?v=a347ef5a"></script>
+<script src="i18n.js?v=ccc6268b"></script>
 <script src="i18n-caps.js?v=60b6003f"></script>
 <script>
 /* ================= THE DOCUMENTARY (edit here) =================
@@ -363,6 +371,8 @@ const FILM = {
   // Readers' suggestions. form: the Google Form link. csv: the published CSV of the approved rows
   // (columns: Type, Suggestion, Name, Note; Type is "City" or "Book"). Empty = buttons go to LinkedIn, nothing listed.
   community: {
+    post: "https://docs.google.com/forms/d/e/1FAIpQLSchB8uJwX-HL8h9CJ57dK8RmMZTWra1vq_69ju8Ln4UNQY7ng/formResponse",
+    fields: { type: "entry.1139033824", s: "entry.1968403076", name: "entry.168709703", note: "entry.1924097747" },
     form: "https://docs.google.com/forms/d/e/1FAIpQLSchB8uJwX-HL8h9CJ57dK8RmMZTWra1vq_69ju8Ln4UNQY7ng/viewform",
     csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSdJ0mks1vrkRzYB-6GRnwijidmQ_NlwgCN00v2ci-_Mmq06jMjBj8t2cM_LYtzc_OyWJt-yvRIt5Na/pub?gid=965401310&single=true&output=csv",
   },
@@ -1031,14 +1041,24 @@ function renderHome() {
           <h3>${t("city_h")}</h3>
           <p class="lead" style="font-size:1rem">${t("city_lead")}</p>
           <div class="chips">${FILM.nextEpisodes.map(nextEp).map((n) => `<span>${esc(n.label || n.city)}</span>`).join("")}</div>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.community.form || FILM.linkedin)}" target="_blank" rel="noopener">${t("send_city")}</a>
+          <form class="suggest" data-kind="City" autocomplete="off">
+            <input name="s" required maxlength="80" placeholder="${t("ph_city")}" aria-label="${t("ph_city")}">
+            <textarea name="note" rows="2" maxlength="280" placeholder="${t("ph_note")}" aria-label="${t("ph_note")}"></textarea>
+            <div class="suggest-row"><input name="name" maxlength="40" placeholder="${t("ph_name")}" aria-label="${t("ph_name")}"><input name="website" class="hp" tabindex="-1" aria-hidden="true"><button class="btn" type="submit">${t("send")}</button></div>
+            <p class="suggest-msg" role="status"></p>
+          </form>
           <div class="readers" id="readersCity" hidden></div>
           ${FILM.community.csv ? "" : `<span class="soon">${t("voting_soon")}</span>`}
         </div>
         <div class="turn-card">
           <h3>${t("book_h")}</h3>
           <p class="lead" style="font-size:1rem">${t("book_lead", { t: esc(FILM.nowReading ? FILM.nowReading.title : t("nothing")) })}</p>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.community.form || FILM.linkedin)}" target="_blank" rel="noopener">${t("send_book")}</a>
+          <form class="suggest" data-kind="Book" autocomplete="off">
+            <input name="s" required maxlength="80" placeholder="${t("ph_book")}" aria-label="${t("ph_book")}">
+            <textarea name="note" rows="2" maxlength="280" placeholder="${t("ph_note")}" aria-label="${t("ph_note")}"></textarea>
+            <div class="suggest-row"><input name="name" maxlength="40" placeholder="${t("ph_name")}" aria-label="${t("ph_name")}"><input name="website" class="hp" tabindex="-1" aria-hidden="true"><button class="btn" type="submit">${t("send")}</button></div>
+            <p class="suggest-msg" role="status"></p>
+          </form>
           <div class="readers" id="readersBook" hidden></div>
           ${FILM.community.csv ? "" : `<span class="soon">${t("shelf_soon")}</span>`}
         </div>
@@ -1174,18 +1194,48 @@ async function loadReaders() {
     [["city", "readersCity"], ["book", "readersBook"]].forEach(([type, id]) => {
       const box = $(id); if (!box) return;
       const groups = new Map();
-      readersData.filter((r) => r.type.startsWith(type)).forEach((r) => {
+      const mine = (() => { try { return JSON.parse(localStorage.getItem("mySuggestions") || "[]"); } catch (e) { return []; } })();
+      const known = new Set(readersData.map((r) => r.type + "|" + r.s.toLowerCase()));
+      readersData.concat(mine.filter((m) => !known.has(m.type + "|" + m.s.toLowerCase()))).filter((r) => r.type.startsWith(type)).forEach((r) => {
         const k = r.s.toLowerCase().replace(/\s+/g, " ");
         const g = groups.get(k) || { s: r.s, n: 0, names: [], note: "" };
-        g.n++; if (r.name) g.names.push(r.name); if (r.note && !g.note) g.note = r.note; groups.set(k, g);
+        g.n++; if (r.mine) g.mine = true; if (r.name) g.names.push(r.name); if (r.note && !g.note) g.note = r.note; groups.set(k, g);
       });
       const top = [...groups.values()].sort((a, b) => b.n - a.n).slice(0, 6);
       box.hidden = false;
       box.innerHTML = `<small>${t("readers_h")}</small>` + (top.length
-        ? `<ol>${top.map((g) => `<li><div><b>${esc(g.s)}</b>${g.note ? `<q>${esc(g.note)}</q>` : ""}</div><span>${t(g.n === 1 ? "vote_1" : "votes_n", { n: g.n })}${g.names.length ? " · " + esc(g.names.slice(0, 2).join(", ")) : ""}</span></li>`).join("")}</ol>`
+        ? `<ol>${top.map((g) => `<li${g.mine ? ' class="mine"' : ""}><div><b>${esc(g.s)}</b>${g.note ? `<q>${esc(g.note)}</q>` : ""}</div><span>${t(g.n === 1 ? "vote_1" : "votes_n", { n: g.n })}${g.names.length ? " · " + esc(g.names.slice(0, 2).join(", ")) : ""}</span></li>`).join("")}</ol>`
         : `<p class="lead" style="font-size:.95rem">${t("readers_none")}</p>`);
     });
   } catch (e) { /* sheet not reachable: keep the section as it is */ }
+}
+
+// Sending a suggestion from the page. Google Forms accepts the post but can't answer cross-site, so we
+// send it "no-cors" and show it straight away; it stays in this browser until the sheet includes it.
+let lastSent = 0;
+function wireSuggest() {
+  app.querySelectorAll("form.suggest").forEach((f) => f.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const msg = f.querySelector(".suggest-msg"), btn = f.querySelector("button");
+    const v = (n) => f.elements[n].value.trim();
+    if (v("website")) return;                       // bots fill the hidden field
+    if (Date.now() - lastSent < 15000) { msg.textContent = t("too_fast"); return; }
+    if (!v("s")) return;
+    const C = FILM.community, body = new URLSearchParams();
+    body.set(C.fields.type, f.dataset.kind); body.set(C.fields.s, v("s"));
+    if (v("name")) body.set(C.fields.name, v("name")); if (v("note")) body.set(C.fields.note, v("note"));
+    btn.disabled = true; msg.textContent = t("sending");
+    try {
+      await fetch(C.post, { method: "POST", mode: "no-cors", body });
+      lastSent = Date.now();
+      const entry = { type: f.dataset.kind.toLowerCase(), s: v("s"), name: v("name"), note: v("note"), mine: true };
+      try { const a = JSON.parse(localStorage.getItem("mySuggestions") || "[]"); a.push(entry); localStorage.setItem("mySuggestions", JSON.stringify(a.slice(-20))); } catch (e) {}
+      readersData = (readersData || []); loadReaders();
+      f.reset(); msg.textContent = t("thanks");
+      track("suggest-" + entry.type, "Sent a " + entry.type + " suggestion", true);
+    } catch (e) { msg.textContent = t("send_failed"); }
+    btn.disabled = false;
+  }));
 }
 
 // Pick up to 12 highlights: big/wide scenes first (in story order), then fill from the start.
@@ -1290,6 +1340,7 @@ function route() {
   renderHome();
   startAvatar();
   loadReaders();
+  wireSuggest();
   reveal();
   trackView();
   app.dataset.view = "home";

@@ -5,6 +5,7 @@ const LANGS = { en: "English", sv: "Svenska", fr: "Français" };
 
 const UI = {
   en: {
+    ph_city: "A city I should visit", ph_book: "A book I should read", ph_note: "Why? A tip is welcome (optional)", ph_name: "Your name (optional)", send: "Send", sending: "Sending…", thanks: "Thank you! Your suggestion is on the list.", too_fast: "One moment, please wait a few seconds.", send_failed: "That didn't work. Please try again.",
     about_caption: "Blue hour, St. Augustine Beach", now_h: "Right now", now_live: "Living in", now_live_v: "St. Augustine, Florida", now_work: "Working on", now_work_v: "Software for self-driving AGVs at Amerden", now_study: "Studying", now_study_v: "MSc High-Performance Computer Systems, Chalmers", now_read: "Reading", now_run: "Running", now_run_v: "Training for half-marathon number three", now_next: "Next on the list", journey_h: "My journey", j1: "Gothenburg", j1_d: "Home, Sweden", j2: "London", j2_d: "Stopover, July 2026", j3: "Orlando", j3_d: "Landed, July 2026", j4: "St. Augustine", j4_d: "Home base, now", j5: "100 cities", j5_d: "By August 2027",
     readers_h: "Suggested by readers", vote_1: "1 vote", votes_n: "{n} votes", readers_none: "No suggestions yet. Be the first!",
     to_top: "Back to top",
@@ -42,6 +43,7 @@ const UI = {
     open_photo: "Open photo: {c}", open_video: "Open video: {c}", live: "▶ Live",
   },
   sv: {
+    ph_city: "En stad jag borde besöka", ph_book: "En bok jag borde läsa", ph_note: "Varför? Tips är välkomna (valfritt)", ph_name: "Ditt namn (valfritt)", send: "Skicka", sending: "Skickar…", thanks: "Tack! Ditt förslag är med på listan.", too_fast: "Vänta några sekunder, tack.", send_failed: "Det gick inte. Försök igen.",
     about_caption: "Blåtimmen, St. Augustine Beach", now_h: "Just nu", now_live: "Bor i", now_live_v: "St. Augustine, Florida", now_work: "Jobbar med", now_work_v: "Mjukvara för självkörande AGV:er på Amerden", now_study: "Studerar", now_study_v: "MSc High-Performance Computer Systems, Chalmers", now_read: "Läser", now_run: "Springer", now_run_v: "Tränar inför halvmaraton nummer tre", now_next: "Nästa på listan", journey_h: "Min resa", j1: "Göteborg", j1_d: "Hemma, Sverige", j2: "London", j2_d: "Mellanlandning, juli 2026", j3: "Orlando", j3_d: "Landade, juli 2026", j4: "St. Augustine", j4_d: "Hemmabas, nu", j5: "100 städer", j5_d: "Före augusti 2027",
     readers_h: "Förslag från läsare", vote_1: "1 röst", votes_n: "{n} röster", readers_none: "Inga förslag än. Bli först!",
     to_top: "Till toppen",
@@ -79,6 +81,7 @@ const UI = {
     open_photo: "Öppna bild: {c}", open_video: "Öppna video: {c}", live: "▶ Live",
   },
   fr: {
+    ph_city: "Une ville que je devrais visiter", ph_book: "Un livre que je devrais lire", ph_note: "Pourquoi ? Un conseil est le bienvenu (facultatif)", ph_name: "Votre prénom (facultatif)", send: "Envoyer", sending: "Envoi…", thanks: "Merci ! Votre suggestion est sur la liste.", too_fast: "Un instant, attendez quelques secondes.", send_failed: "Ça n'a pas marché. Réessayez.",
     about_caption: "L'heure bleue, St. Augustine Beach", now_h: "En ce moment", now_live: "J'habite à", now_live_v: "St. Augustine, Floride", now_work: "Je travaille sur", now_work_v: "Des logiciels pour AGV autonomes chez Amerden", now_study: "J'étudie", now_study_v: "MSc High-Performance Computer Systems, Chalmers", now_read: "Je lis", now_run: "Je cours", now_run_v: "Je m'entraîne pour mon troisième semi-marathon", now_next: "Prochaine étape", journey_h: "Mon parcours", j1: "Göteborg", j1_d: "Chez moi, Suède", j2: "Londres", j2_d: "Escale, juillet 2026", j3: "Orlando", j3_d: "Arrivée, juillet 2026", j4: "St. Augustine", j4_d: "Camp de base, maintenant", j5: "100 villes", j5_d: "D'ici août 2027",
     readers_h: "Proposé par les lecteurs", vote_1: "1 vote", votes_n: "{n} votes", readers_none: "Pas encore de suggestions. Soyez le premier !",
     to_top: "Retour en haut",
