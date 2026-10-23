@@ -238,6 +238,21 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .rv { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
 .rv.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; transition: none; } }
+.about-photo { position: relative; }
+.about-photo figcaption { position: absolute; left: 16px; bottom: 14px; padding: 6px 12px; border-radius: 999px; background: #0008; color: #fff; font-size: .8rem; backdrop-filter: blur(6px); }
+.now { border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 12px; background: var(--card); }
+.now dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 20px; }
+.now dt { font-family: var(--f-head); font-size: .7rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.now dd { margin: 2px 0 0; font-weight: 600; }
+.journey { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; position: relative; }
+.journey::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 2px; background: var(--line); }
+.journey li { position: relative; padding-top: 22px; display: grid; gap: 2px; font-size: .82rem; }
+.journey li::before { content: ""; position: absolute; top: 0; left: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); }
+.journey li.here::before { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent); }
+.journey li.soon::before { background: var(--bg); border: 2px dashed var(--accent); }
+.journey li b { font-size: .92rem; }
+.journey li span { color: var(--muted); }
+@media (max-width: 560px) { .journey { grid-template-columns: 1fr; } .journey::before { left: 6px; right: auto; top: 6px; bottom: 6px; width: 2px; height: auto; } .journey li { padding: 0 0 0 26px; } }
 .trailer-ph { border: 2px dashed var(--line); border-radius: 18px; padding: 18px 20px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
 .trailer-ph .pl { width: 44px; height: 44px; border-radius: 50%; background: var(--alt); display: grid; place-items: center; color: var(--accent); flex: none; }
 
@@ -333,7 +348,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 
 <script>window.goatcounter = { no_onload: true, allow_local: false };</script>
 <script data-goatcounter="https://myamericanyear.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-<script src="i18n.js?v=c37ee944"></script>
+<script src="i18n.js?v=a347ef5a"></script>
 <script src="i18n-caps.js?v=60b6003f"></script>
 <script>
 /* ================= THE DOCUMENTARY (edit here) =================
@@ -969,7 +984,7 @@ function renderHome() {
       </div>
     </div></section>
     <section class="section" id="about"><div class="container about">
-      <figure><img src="${esc(thumb(A.photo))}" alt="${t("about_alt")}" loading="lazy"></figure>
+      <figure class="about-photo"><img src="${esc(thumb(A.photo))}" alt="${t("about_alt")}" loading="lazy"><figcaption>${t("about_caption")}</figcaption></figure>
       <div style="display:grid; gap:18px; min-width:0">
         <div class="me" id="me">
           <button type="button" class="me-face" id="meFace" aria-label="${t("avatar_label")}">${avatarFace()}</button>
@@ -978,10 +993,19 @@ function renderHome() {
         <span class="eyebrow">${t("about_eyebrow")}</span><h2>${t("about_h")}</h2>
         <p class="lead">${esc(A.text)}</p>
         <div class="facts">${A.facts.map((f) => `<span>${esc(f)}</span>`).join("")}</div>
-        ${FILM.about.trailer
-          ? `<video src="${esc(FILM.about.trailer)}" controls playsinline style="width:100%; border-radius:18px"></video>`
-          : `<div class="trailer-ph"><span class="pl">▶</span><span>${t("trailer_ph")}</span></div>`}
-        <a class="btn outline" style="justify-self:start" href="${esc(FILM.linkedin)}">${t("connect")}</a>
+        <div class="now">
+          <small class="eyebrow">${t("now_h")}</small>
+          <dl>${[["now_live", "now_live_v"], ["now_work", "now_work_v"], ["now_study", "now_study_v"],
+                 ["now_read", null], ["now_run", "now_run_v"], ["now_next", null]].map(([k, v]) =>
+            `<div><dt>${t(k)}</dt><dd>${v ? t(v) : k === "now_read" ? esc(FILM.nowReading ? FILM.nowReading.title : "") : esc(nextEp(FILM.nextEpisodes[0]).label || FILM.nextEpisodes[0].city)}</dd></div>`).join("")}</dl>
+        </div>
+        <ol class="journey" aria-label="${t("journey_h")}">${["j1", "j2", "j3", "j4", "j5"].map((k, i) =>
+          `<li class="${i === 3 ? "here" : i === 4 ? "soon" : ""}"><b>${t(k)}</b><span>${t(k + "_d")}</span></li>`).join("")}</ol>
+        ${FILM.about.trailer ? `<video src="${esc(FILM.about.trailer)}" controls playsinline style="width:100%; border-radius:18px"></video>` : ""}
+        <div style="display:flex; flex-wrap:wrap; gap:12px">
+          <a class="btn" href="#episodes">${t("start")}</a>
+          <a class="btn outline" href="${esc(FILM.linkedin)}" target="_blank" rel="noopener">${t("connect")}</a>
+        </div>
       </div>
     </div></section>
     <section class="section alt" id="next"><div class="container">
