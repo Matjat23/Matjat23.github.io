@@ -253,6 +253,28 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .journey li b { font-size: .92rem; }
 .journey li span { color: var(--muted); }
 @media (max-width: 560px) { .journey { grid-template-columns: 1fr; } .journey::before { left: 6px; right: auto; top: 6px; bottom: 6px; width: 2px; height: auto; } .journey li { padding: 0 0 0 26px; } }
+.chat-launch { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: flex; align-items: center; gap: 10px; padding: 6px 18px 6px 6px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font: inherit; font-weight: 700; font-size: .9rem; cursor: pointer; box-shadow: var(--shadow); }
+.chat-launch .mini, .chat-head .mini { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: #fff; flex: none; }
+.chat-launch .mini svg, .chat-head .mini svg { width: 100%; height: 100%; display: block; }
+.to-top { bottom: 84px !important; }
+.chat { position: fixed; right: 20px; bottom: 20px; z-index: 41; width: min(380px, calc(100vw - 32px)); height: min(560px, calc(100vh - 100px)); display: grid; grid-template-rows: auto 1fr auto auto; background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 20px 60px #0006; overflow: hidden; }
+.chat[hidden] { display: none; }
+.chat-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--accent); color: #fff; }
+.chat-head b { display: block; font-size: 1rem; }
+.chat-head small { display: block; font-size: .75rem; opacity: .9; }
+.chat-head button { margin-left: auto; background: none; border: 0; color: #fff; font-size: 1.4rem; cursor: pointer; line-height: 1; }
+.chat-log { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 85%; padding: 10px 14px; border-radius: 16px; font-size: .95rem; line-height: 1.45; white-space: pre-line; }
+.msg.bot { align-self: flex-start; background: var(--alt); border-bottom-left-radius: 4px; }
+.msg.me { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.msg a { color: inherit; font-weight: 700; }
+.msg.typing::after { content: "…"; animation: caret 1s steps(1) infinite; }
+.chat-chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 12px 10px; }
+.chat-chips button { flex: none; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .8rem; cursor: pointer; }
+.chat-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+.chat-form input { flex: 1; min-width: 0; font: inherit; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.chat-form button { border: 0; border-radius: 999px; padding: 0 16px; background: var(--accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+@media (max-width: 560px) { .chat-launch span.lbl { display: none; } .chat-launch { padding: 6px; } }
 .trailer-ph { border: 2px dashed var(--line); border-radius: 18px; padding: 18px 20px; display: flex; gap: 14px; align-items: center; color: var(--muted); }
 .trailer-ph .pl { width: 44px; height: 44px; border-radius: 50%; background: var(--alt); display: grid; place-items: center; color: var(--accent); flex: none; }
 
@@ -374,7 +396,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 
 <script>window.goatcounter = { no_onload: true, allow_local: false };</script>
 <script data-goatcounter="https://myamericanyear.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-<script src="i18n.js?v=3cbe874a"></script>
+<script src="i18n.js?v=f572a86c"></script>
 <script src="i18n-caps.js?v=60b6003f"></script>
 <script>
 /* ================= THE DOCUMENTARY (edit here) =================
@@ -1122,7 +1144,7 @@ function startAvatar() {
     };
     step();
   };
-  face.onclick = () => { meLine++; say(meLine); if (meLine === 1) track("avatar-click", "Clicked the avatar", true); };
+  face.onclick = () => { if (meLine >= lines.length - 1 && $("chatLaunch")) { $("chatLaunch").click(); return; } meLine++; say(meLine); if (meLine === 1) track("avatar-click", "Clicked the avatar", true); };
   say(0);
   Object.values(FILM.avatar.frames).forEach((src) => { const i = new Image(); i.src = src; });
 }
@@ -1263,6 +1285,92 @@ function wireSuggest() {
   }));
 }
 
+// "Ask Matty": a small chat that answers in my voice, only with facts from this site.
+const norm = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const INTENTS = [
+  ["hello", ["hi", "hello", "hey", "hej", "halla", "tjena", "salut", "bonjour", "coucou"]],
+  ["thanks", ["thank", "thanks", "tack", "merci"]],
+  ["who", ["who are you", "about you", "yourself", "introduce", "vem ar du", "beratta om dig", "qui es", "presente", "toi-meme"]],
+  ["live", ["live", "living", "home", "where are you", "bor", "hemma", "habite", "vis ou", "ou es-tu"]],
+  ["work", ["work", "job", "amerden", "agv", "engineer", "jobb", "arbetar", "ingenjor", "travail", "travailles", "ingenieur"]],
+  ["study", ["study", "studying", "chalmers", "master", "university", "studerar", "plugga", "etudie", "etudes"]],
+  ["cities", ["cities", "visited", "been to", "how many", "stader", "besokt", "villes", "visite", "combien"]],
+  ["next", ["next", "plan", "going", "nasta", "ska du", "prochaine", "ensuite", "vas-tu"]],
+  ["read", ["read", "book", "las", "bok", "lis", "livre", "lecture"]],
+  ["mission", ["100", "mission", "goal", "why", "uppdrag", "mal ", "varfor", "pourquoi", "objectif"]],
+  ["lang", ["language", "speak", "sprak", "talar", "langue", "parles", "wolof", "french", "franska"]],
+  ["contact", ["contact", "linkedin", "reach", "email", "kontakt", "kontakta", "contacter", "joindre"]],
+  ["fav", ["favourite", "favorite", "best", "love most", "favorit", "basta", "prefere", "meilleur"]],
+  ["hobby", ["hobby", "free time", "fun", "weekend", "fritid", "gillar", "loisir", "temps libre", "aimes"]],
+];
+function chatAnswer(q) {
+  const n = norm(q);
+  // A city or place name wins: answer with that chapter.
+  const places = FILM.chapters.flatMap((c) => [[c, c.city], ...(c.alsoIn || []).map((a) => [c, a.name])]);
+  const hit = places.find(([, name]) => n.includes(norm(name).replace(/\./g, "").replace("saint", "st")) || n.includes(norm(name)));
+  const intent = (INTENTS.map(([id, kws]) => [id, kws.filter((k) => (" " + n + " ").includes(k)).length]).sort((a, b) => b[1] - a[1])[0] || [])[1] ? INTENTS.map(([id, kws]) => [id, kws.filter((k) => (" " + n + " ").includes(k)).length]).sort((a, b) => b[1] - a[1])[0][0] : null;
+  if (hit && intent !== "next") {
+    const c = L(hit[0]), tip = (c.tips || [])[0];
+    const extra = hit[1] !== hit[0].city ? t("a_also", { place: hit[1], city: c.city }) + "
+" : "";
+    return { text: extra + t("a_city", { city: c.city, sub: c.sub }) + (tip ? "\n" + t("a_tip", { tip: tip.text }) : ""), link: ["#chapter-" + c.id, t("open_chapter", { city: c.city })], intent: "city" };
+  }
+  const nextList = FILM.nextEpisodes.map(nextEp).map((x) => x.label || x.city).join(", ");
+  const visited = visitedUS.map((c) => c.city).join(", ");
+  const A = {
+    hello: t("a_hello"), thanks: t("a_thanks"), who: t("a_who"), live: t("a_live"), work: t("a_work"), study: t("a_study"),
+    cities: t("a_cities", { n: cityCount, list: visited }), next: t("a_next", { list: nextList }),
+    read: t("a_read", { book: FILM.nowReading ? FILM.nowReading.title : "" }), mission: t("a_mission", { n: FILM.goal }),
+    lang: t("a_lang"), contact: t("a_contact"), fav: t("a_fav"), hobby: t("a_hobby"),
+  };
+  if (intent && A[intent]) return { text: A[intent], intent, link: intent === "contact" ? [FILM.linkedin, "LinkedIn"] : intent === "next" || intent === "read" ? ["#your-turn", t("chat_suggest")] : null };
+  return { text: t("a_unknown"), intent: "unknown", link: [FILM.linkedin, "LinkedIn"] };
+}
+function chatMsg(who, text, link) {
+  const el = document.createElement("div"); el.className = "msg " + who;
+  el.textContent = text;
+  if (link) { const a = document.createElement("a"); a.href = link[0]; a.textContent = "\n" + link[1] + " →"; if (/^https?:/.test(link[0])) { a.target = "_blank"; a.rel = "noopener"; } a.addEventListener("click", () => { if (link[0].startsWith("#")) $("chat").hidden = true; }); el.append(a); }
+  $("chatLog").append(el); $("chatLog").scrollTop = 1e9; return el;
+}
+function chatAsk(q) {
+  q = q.trim(); if (!q) return;
+  chatMsg("me", q);
+  const r = chatAnswer(q), typing = chatMsg("bot typing", "");
+  setTimeout(() => { typing.remove(); chatMsg("bot", r.text, r.link); }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 450 + Math.min(900, r.text.length * 6));
+  track("chat-" + r.intent, "Asked the chat (" + r.intent + ")", true);
+}
+function chatLabels() {
+  if (!$("chat")) return;
+  $("chatLaunch").querySelector(".lbl").textContent = t("chat_open");
+  $("chatLaunch").setAttribute("aria-label", t("chat_open"));
+  $("chatTitle").textContent = t("chat_title"); $("chatNote").textContent = t("chat_note");
+  $("chatInput").placeholder = t("chat_ph"); $("chatInput").setAttribute("aria-label", t("chat_ph"));
+  $("chatSend").textContent = t("send"); $("chatClose").setAttribute("aria-label", t("lb_close"));
+  $("chatChips").innerHTML = ["chat_q1", "chat_q2", "chat_q3", "chat_q4", "chat_q5"].map((k) => `<button type="button">${esc(t(k))}</button>`).join("");
+}
+function initChat() {
+  const face = avatarFace().replace(/ id="[^"]*"/g, "").replace(/class="lid"/g, "");
+  document.body.insertAdjacentHTML("beforeend", `
+    <button type="button" class="chat-launch" id="chatLaunch"><span class="mini">${face}</span><span class="lbl"></span></button>
+    <section class="chat" id="chat" hidden role="dialog" aria-labelledby="chatTitle">
+      <div class="chat-head"><span class="mini">${face}</span><div><b id="chatTitle"></b><small id="chatNote"></small></div><button type="button" id="chatClose">×</button></div>
+      <div class="chat-log" id="chatLog" aria-live="polite"></div>
+      <div class="chat-chips" id="chatChips"></div>
+      <form class="chat-form" id="chatForm" autocomplete="off"><input id="chatInput" maxlength="200"><button id="chatSend" type="submit"></button></form>
+    </section>`);
+  chatLabels();
+  let greeted = false;
+  $("chatLaunch").addEventListener("click", () => {
+    $("chat").hidden = false; $("chatLaunch").hidden = true;
+    if (!greeted) { greeted = true; chatMsg("bot", t("chat_hello")); track("chat-open", "Opened the chat", true); }
+    $("chatInput").focus();
+  });
+  $("chatClose").addEventListener("click", () => { $("chat").hidden = true; $("chatLaunch").hidden = false; });
+  $("chatForm").addEventListener("submit", (e) => { e.preventDefault(); chatAsk($("chatInput").value); $("chatInput").value = ""; });
+  $("chatChips").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) chatAsk(b.textContent); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("chat").hidden) $("chatClose").click(); });
+}
+
 // Pick up to 12 highlights: big/wide scenes first (in story order), then fill from the start.
 function highlights(photos) {
   if (photos.length <= 12) return new Set(photos.map((_, i) => i));
@@ -1373,11 +1481,12 @@ function route() {
   if (target) target.scrollIntoView(); else if (wasChapter || h === "home") window.scrollTo(0, 0);
 }
 applyStatic();
+initChat();
 $("langSwitch").addEventListener("click", (ev) => {
   const b = ev.target.closest("button[data-lang]"); if (!b || b.dataset.lang === lang) return;
   lang = b.dataset.lang; try { localStorage.setItem("lang", lang); } catch (e) {}
   track("language-" + lang, "Switched language to " + lang, true);
-  const y = window.scrollY; applyStatic(); route(); if (app.dataset.view !== "chapter") window.scrollTo(0, y);
+  const y = window.scrollY; applyStatic(); chatLabels(); route(); if (app.dataset.view !== "chapter") window.scrollTo(0, y);
 });
 document.addEventListener("click", (ev) => {
   const a = ev.target.closest('a[href*="linkedin.com"]');
