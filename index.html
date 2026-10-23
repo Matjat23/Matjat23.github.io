@@ -246,6 +246,13 @@ dialog.lightbox video { max-width: 100%; max-height: 82vh; border-radius: 12px; 
 .turn-card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 28px; display: grid; gap: 12px; align-content: start; }
 .turn-card h3 { font-family: var(--f-serif); font-size: 1.5rem; }
 .turn-card .soon { font-size: .82rem; color: var(--muted); font-style: italic; }
+.readers { display: grid; gap: 10px; margin-top: 6px; padding-top: 16px; border-top: 1px solid var(--line); }
+.readers small { font-family: var(--f-head); font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+.readers ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.readers li { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.readers li b { font-weight: 600; }
+.readers li span { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.readers q { display: block; font-size: .88rem; color: var(--muted); font-style: italic; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips span { font-size: .85rem; padding: 6px 12px; border-radius: 999px; background: var(--alt); }
 
@@ -326,7 +333,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 
 <script>window.goatcounter = { no_onload: true, allow_local: false };</script>
 <script data-goatcounter="https://myamericanyear.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-<script src="i18n.js?v=63c1d4b6"></script>
+<script src="i18n.js?v=c37ee944"></script>
 <script src="i18n-caps.js?v=60b6003f"></script>
 <script>
 /* ================= THE DOCUMENTARY (edit here) =================
@@ -338,6 +345,9 @@ const FILM = {
   hero: "media/hero-palms.jpg",
   heroVideo: "media/hero-loop.mp4", heroPoster: "media/hero-loop-poster.jpg",
   linkedin: "https://www.linkedin.com/in/matty-jatta-b11880199/",
+  // Readers' suggestions. form: the Google Form link. csv: the published CSV of the approved rows
+  // (columns: Type, Suggestion, Name, Note; Type is "City" or "Book"). Empty = buttons go to LinkedIn, nothing listed.
+  community: { form: "", csv: "" },
   avatar: { frames: {} }, // { c, l, r, u, d, ul, ur, dl, dr } -> "media/avatar/<name>.png"
   about: {
     photo: "media/st-augustine-blue-hour-reflection.jpg",
@@ -994,14 +1004,16 @@ function renderHome() {
           <h3>${t("city_h")}</h3>
           <p class="lead" style="font-size:1rem">${t("city_lead")}</p>
           <div class="chips">${FILM.nextEpisodes.map(nextEp).map((n) => `<span>${esc(n.label || n.city)}</span>`).join("")}</div>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">${t("send_city")}</a>
-          <span class="soon">${t("voting_soon")}</span>
+          <a class="btn" style="justify-self:start" href="${esc(FILM.community.form || FILM.linkedin)}" target="_blank" rel="noopener">${t("send_city")}</a>
+          <div class="readers" id="readersCity" hidden></div>
+          ${FILM.community.csv ? "" : `<span class="soon">${t("voting_soon")}</span>`}
         </div>
         <div class="turn-card">
           <h3>${t("book_h")}</h3>
           <p class="lead" style="font-size:1rem">${t("book_lead", { t: esc(FILM.nowReading ? FILM.nowReading.title : t("nothing")) })}</p>
-          <a class="btn" style="justify-self:start" href="${esc(FILM.linkedin)}">${t("send_book")}</a>
-          <span class="soon">${t("shelf_soon")}</span>
+          <a class="btn" style="justify-self:start" href="${esc(FILM.community.form || FILM.linkedin)}" target="_blank" rel="noopener">${t("send_book")}</a>
+          <div class="readers" id="readersBook" hidden></div>
+          ${FILM.community.csv ? "" : `<span class="soon">${t("shelf_soon")}</span>`}
         </div>
       </div>
     </div></section>
@@ -1109,6 +1121,46 @@ function trackView() {
   track(path, document.title);
 }
 
+// Readers' suggestions, read from the published sheet (only rows I approved). Same suggestion = more votes.
+let readersData = null;
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') q = false; else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((c) => c.trim()));
+}
+async function loadReaders() {
+  if (!FILM.community.csv) return;
+  try {
+    if (!readersData) {
+      const res = await fetch(FILM.community.csv, { cache: "no-store" });
+      const rows = parseCSV(await res.text()).slice(1);
+      readersData = rows.map(([type, s, name, note]) => ({ type: (type || "").trim().toLowerCase(), s: (s || "").trim(), name: (name || "").trim(), note: (note || "").trim() })).filter((r) => r.s);
+    }
+    [["city", "readersCity"], ["book", "readersBook"]].forEach(([type, id]) => {
+      const box = $(id); if (!box) return;
+      const groups = new Map();
+      readersData.filter((r) => r.type.startsWith(type)).forEach((r) => {
+        const k = r.s.toLowerCase().replace(/\s+/g, " ");
+        const g = groups.get(k) || { s: r.s, n: 0, names: [], note: "" };
+        g.n++; if (r.name) g.names.push(r.name); if (r.note && !g.note) g.note = r.note; groups.set(k, g);
+      });
+      const top = [...groups.values()].sort((a, b) => b.n - a.n).slice(0, 6);
+      box.hidden = false;
+      box.innerHTML = `<small>${t("readers_h")}</small>` + (top.length
+        ? `<ol>${top.map((g) => `<li><div><b>${esc(g.s)}</b>${g.note ? `<q>${esc(g.note)}</q>` : ""}</div><span>${t(g.n === 1 ? "vote_1" : "votes_n", { n: g.n })}${g.names.length ? " · " + esc(g.names.slice(0, 2).join(", ")) : ""}</span></li>`).join("")}</ol>`
+        : `<p class="lead" style="font-size:.95rem">${t("readers_none")}</p>`);
+    });
+  } catch (e) { /* sheet not reachable: keep the section as it is */ }
+}
+
 // Pick up to 12 highlights: big/wide scenes first (in story order), then fill from the start.
 function highlights(photos) {
   if (photos.length <= 12) return new Set(photos.map((_, i) => i));
@@ -1210,6 +1262,7 @@ function route() {
   const wasChapter = app.dataset.view === "chapter";
   renderHome();
   startAvatar();
+  loadReaders();
   reveal();
   trackView();
   app.dataset.view = "home";
