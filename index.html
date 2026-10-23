@@ -1311,8 +1311,7 @@ function chatAnswer(q) {
   const intent = (INTENTS.map(([id, kws]) => [id, kws.filter((k) => (" " + n + " ").includes(k)).length]).sort((a, b) => b[1] - a[1])[0] || [])[1] ? INTENTS.map(([id, kws]) => [id, kws.filter((k) => (" " + n + " ").includes(k)).length]).sort((a, b) => b[1] - a[1])[0][0] : null;
   if (hit && intent !== "next") {
     const c = L(hit[0]), tip = (c.tips || [])[0];
-    const extra = hit[1] !== hit[0].city ? t("a_also", { place: hit[1], city: c.city }) + "
-" : "";
+    const extra = hit[1] !== hit[0].city ? t("a_also", { place: hit[1], city: c.city }) + "\n" : "";
     return { text: extra + t("a_city", { city: c.city, sub: c.sub }) + (tip ? "\n" + t("a_tip", { tip: tip.text }) : ""), link: ["#chapter-" + c.id, t("open_chapter", { city: c.city })], intent: "city" };
   }
   const nextList = FILM.nextEpisodes.map(nextEp).map((x) => x.label || x.city).join(", ");
