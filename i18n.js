@@ -133,7 +133,7 @@ const WORDS = {
 const CONTENT = {
   sv: {
     about: {
-      text: "Jag heter Matty och kommer från Göteborg. I år bor jag i St. Augustine i Florida, där jag jobbar som mjukvaru- och automationsingenjör och bygger mjukvara för självkörande fordon. På fritiden springer jag, läser, jagar solnedgångar och samlar på städer. Den här sidan är min dokumentär om året: varje plats jag besöker blir ett kapitel.",
+      text: "Från Göteborg till St. Augustine i Florida, i ett år. På dagarna bygger jag mjukvara för självkörande fordon; resten av tiden promenerar jag längs stranden, läser, jagar solnedgångar och samlar på städer. Varje plats jag besöker blir ett kapitel.",
       facts: ["Göteborg → St. Augustine", "Mjukvaru- och automationsingenjör", "2 halvmaraton", "Uppdrag: 100 städer"],
     },
     next: { "Miami": { region: "Miami-Dade County, Florida" }, "Washington, D.C.": { region: "USA:s huvudstad, inte en delstat" },
@@ -191,7 +191,7 @@ const CONTENT = {
   },
   fr: {
     about: {
-      text: "Je m'appelle Matty et je viens de Göteborg, en Suède. Cette année, je vis à St. Augustine, en Floride, où je travaille comme ingénieure logiciel et automatisation et développe des logiciels pour des véhicules autonomes. En dehors du travail, je cours, je lis, je chasse les couchers de soleil et je collectionne les villes. Ce site est le documentaire de mon année : chaque lieu que je visite devient un chapitre.",
+      text: "De Göteborg, en Suède, à St. Augustine, en Floride, pour un an. La journée, je développe des logiciels pour des véhicules autonomes ; le reste du temps, je marche sur la plage, je lis, je chasse les couchers de soleil et je collectionne les villes. Chaque lieu que je visite devient un chapitre.",
       facts: ["Göteborg → St. Augustine", "Ingénieure logiciel et automatisation", "2 semi-marathons", "Mission : 100 villes"],
     },
     next: { "Miami": { region: "Comté de Miami-Dade, Floride" }, "Washington, D.C.": { region: "La capitale des États-Unis, pas un État" },

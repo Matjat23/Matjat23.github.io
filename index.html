@@ -321,6 +321,24 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
   .mosaic { grid-auto-rows: 300px; }
   .ep .meta { font-size: .95rem; }
 }
+
+/* About v3 */
+#about .about { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
+.about-photo { position: relative; margin: 0; }
+.about-photo .me { position: absolute; left: 18px; right: 18px; top: 18px; align-items: flex-start; }
+.about-photo .me-face { width: 84px; height: 84px; border: 3px solid #fff; }
+.about-photo .me-bubble { background: #ffffffee; color: #1d1d1f; border-color: transparent; font-size: .92rem; max-width: 26ch; }
+.about-photo figcaption { left: auto; right: 16px; }
+.about-text { display: grid; gap: 22px; min-width: 0; align-content: center; }
+.about-text h2 { font-size: clamp(2.6rem, 5.5vw, 4.2rem); line-height: 1; }
+.about-lead { margin: 0; font-family: var(--f-serif); font-size: clamp(1.25rem, 2vw, 1.6rem); line-height: 1.45; color: var(--fg); max-width: 34ch; }
+.now-list { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; border-top: 1px solid var(--line); }
+.now-list > div { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 3px; }
+.now-list dt { font-family: var(--f-head); font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+.now-list dd { margin: 0; font-size: 1.02rem; }
+.about-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+#about .journey { margin-top: clamp(40px, 6vw, 72px); }
+@media (max-width: 900px) { #about .about { grid-template-columns: 1fr; } .now-list { grid-template-columns: 1fr; } }
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
 </head>
@@ -356,7 +374,7 @@ dialog.lightbox p { color: #fff; text-align: center; padding-top: 12px; }
 
 <script>window.goatcounter = { no_onload: true, allow_local: false };</script>
 <script data-goatcounter="https://myamericanyear.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-<script src="i18n.js?v=f1f8a6ca"></script>
+<script src="i18n.js?v=3cbe874a"></script>
 <script src="i18n-caps.js?v=60b6003f"></script>
 <script>
 /* ================= THE DOCUMENTARY (edit here) =================
@@ -379,7 +397,7 @@ const FILM = {
   avatar: { frames: {} }, // { c, l, r, u, d, ul, ur, dl, dr } -> "media/avatar/<name>.png"
   about: {
     photo: "media/st-augustine-blue-hour-reflection.jpg",
-    text: "I'm Matty, from Gothenburg, Sweden. This year I live in St. Augustine, Florida, where I work as a software and automation engineer, building software for self-driving vehicles. Off the clock I run, read, chase sunsets and collect cities. This site is my documentary of the year: every place I visit becomes a chapter.",
+    text: "From Gothenburg, Sweden, to St. Augustine, Florida, for one year. By day I build software for self-driving vehicles; the rest of the time I walk the beach, read, chase sunsets and collect cities. Every place I visit becomes a chapter.",
     facts: ["Gothenburg → St. Augustine", "Software & automation engineer", "2 half-marathons", "Mission: 100 cities"],
     trailer: "",
   },
@@ -993,30 +1011,31 @@ function renderHome() {
         </div>
       </div>
     </div></section>
-    <section class="section" id="about"><div class="container about">
-      <figure class="about-photo"><img src="${esc(thumb(A.photo))}" alt="${t("about_alt")}" loading="lazy"><figcaption>${t("about_caption")}</figcaption></figure>
-      <div style="display:grid; gap:18px; min-width:0">
-        <div class="me" id="me">
-          <button type="button" class="me-face" id="meFace" aria-label="${t("avatar_label")}">${avatarFace()}</button>
-          <p class="me-bubble" id="meBubble" aria-live="polite"></p>
-        </div>
-        <span class="eyebrow">${t("about_eyebrow")}</span><h2>${t("about_h")}</h2>
-        <p class="lead">${esc(A.text)}</p>
-        <div class="facts">${A.facts.map((f) => `<span>${esc(f)}</span>`).join("")}</div>
-        <div class="now">
-          <small class="eyebrow">${t("now_h")}</small>
-          <dl>${[["now_live", "now_live_v"], ["now_work", "now_work_v"], ["now_study", "now_study_v"],
+    <section class="section" id="about"><div class="container">
+      <div class="about">
+        <figure class="about-photo"><img src="${esc(thumb(A.photo))}" alt="${t("about_alt")}" loading="lazy">
+          <figcaption>${t("about_caption")}</figcaption>
+          <div class="me" id="me">
+            <button type="button" class="me-face" id="meFace" aria-label="${t("avatar_label")}">${avatarFace()}</button>
+            <p class="me-bubble" id="meBubble" aria-live="polite"></p>
+          </div>
+        </figure>
+        <div class="about-text">
+          <span class="eyebrow">${t("about_eyebrow")}</span>
+          <h2>${t("about_h")}</h2>
+          <p class="about-lead">${esc(A.text)}</p>
+          <dl class="now-list" aria-label="${t("now_h")}">${[["now_live", "now_live_v"], ["now_work", "now_work_v"], ["now_study", "now_study_v"],
                  ["now_read", null], ["now_run", "now_run_v"], ["now_next", null]].map(([k, v]) =>
             `<div><dt>${t(k)}</dt><dd>${v ? t(v) : k === "now_read" ? esc(FILM.nowReading ? FILM.nowReading.title : "") : esc(nextEp(FILM.nextEpisodes[0]).label || FILM.nextEpisodes[0].city)}</dd></div>`).join("")}</dl>
-        </div>
-        <ol class="journey" aria-label="${t("journey_h")}">${["j1", "j2", "j3", "j4", "j5"].map((k, i) =>
-          `<li class="${i === 3 ? "here" : i === 4 ? "soon" : ""}"><b>${t(k)}</b><span>${t(k + "_d")}</span></li>`).join("")}</ol>
-        ${FILM.about.trailer ? `<video src="${esc(FILM.about.trailer)}" controls playsinline style="width:100%; border-radius:18px"></video>` : ""}
-        <div style="display:flex; flex-wrap:wrap; gap:12px">
-          <a class="btn" href="#episodes">${t("start")}</a>
-          <a class="btn outline" href="${esc(FILM.linkedin)}" target="_blank" rel="noopener">${t("connect")}</a>
+          ${FILM.about.trailer ? `<video src="${esc(FILM.about.trailer)}" controls playsinline style="width:100%; border-radius:18px"></video>` : ""}
+          <div class="about-cta">
+            <a class="btn" href="#episodes">${t("start")}</a>
+            <a class="btn outline" href="${esc(FILM.linkedin)}" target="_blank" rel="noopener">${t("connect")}</a>
+          </div>
         </div>
       </div>
+      <ol class="journey" aria-label="${t("journey_h")}">${["j1", "j2", "j3", "j4", "j5"].map((k, i) =>
+        `<li class="${i === 3 ? "here" : i === 4 ? "soon" : ""}"><b>${t(k)}</b><span>${t(k + "_d")}</span></li>`).join("")}</ol>
     </div></section>
     <section class="section alt" id="next"><div class="container">
       <div class="head"><span class="eyebrow">${t("next_eyebrow")}</span><h2>${t("next_h")}</h2>
